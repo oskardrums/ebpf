@@ -1,26 +1,39 @@
+%%%-------------------------------------------------------------------
+%%% @author Oskar
+%%% @copyright (C) 2021, Oskar Mazerath
+%%% @doc
+%%% Erlang eBPF library
+%%% @end
+%%% Created :  5 Feb 2021 by Oskar
+%%%-------------------------------------------------------------------
 -module(ebpf).
 
+%% API
 -export([from_beam/1, from_erl/1]).
--export([encode/1, decode/1]).
--export([
-    alu64_reg/3,
-    alu32_reg/3,
-    alu64_imm/3,
-    alu32_imm/3,
-    mov64_reg/2,
-    mov32_reg/2,
-    mov64_imm/2,
-    mov32_imm/2,
-    exit_insn/0
-]).
+
+%%%===================================================================
+%%% Includes
+%%%===================================================================
 
 -include("ebpf.hrl").
 -include("beam.hrl").
-
 -include_lib("compiler/src/beam_disasm.hrl").
+
+%%%===================================================================
+%%% Type definitions
+%%%===================================================================
 
 -type ebpf_module() :: [#rt{}].
 
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
 -spec from_beam(#beam_file{}) -> ebpf_module().
 from_beam(#beam_file{
     module = _Module,
@@ -41,6 +54,10 @@ from_erl(Path) ->
     ]),
     ebpf_from_beam(Functions).
 
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
 -spec ebpf_from_beam([#function{}]) -> [#rt{}].
 ebpf_from_beam(Functions) ->
     lists:map(fun ebpf_from_beam_function/1, Functions).
@@ -52,69 +69,24 @@ ebpf_from_beam_function(#function{name = Name, code = Code}) ->
         _ -> beam_instructions_to_bpf_rt(Code)
     end.
 
--spec encode(#instruction{}) -> binary().
-encode(#instruction{code = Code, dst_reg = Dst, src_reg = Src, off = Off, imm = Imm}) ->
-    <<Code:8/unsigned, Dst:4/unsigned, Src:4/unsigned, Off:16/signed, Imm:32/signed>>.
-
--spec decode(binary()) -> #instruction{}.
-decode(<<Code:8/unsigned, Dst:4/unsigned, Src:4/unsigned, Off:16/signed, Imm:32/signed>>) ->
-    #instruction{code = Code, dst_reg = Dst, src_reg = Src, off = Off, imm = Imm}.
-
--spec alu64_reg(code(), reg(), reg()) -> #instruction{}.
-alu64_reg(Op, Dst, Src) ->
-    #instruction{code = ?BPF_ALU64 bor ?BPF_OP(Op) bor ?BPF_X, dst_reg = Dst, src_reg = Src}.
-
--spec alu32_reg(code(), reg(), reg()) -> #instruction{}.
-alu32_reg(Op, Dst, Src) ->
-    #instruction{code = ?BPF_ALU bor ?BPF_OP(Op) bor ?BPF_X, dst_reg = Dst, src_reg = Src}.
-
--spec alu64_imm(code(), reg(), imm()) -> #instruction{}.
-alu64_imm(Op, Dst, Imm) ->
-    #instruction{code = ?BPF_ALU64 bor ?BPF_OP(Op) bor ?BPF_K, dst_reg = Dst, imm = Imm}.
-
--spec alu32_imm(code(), reg(), imm()) -> #instruction{}.
-alu32_imm(Op, Dst, Imm) ->
-    #instruction{code = ?BPF_ALU bor ?BPF_OP(Op) bor ?BPF_K, dst_reg = Dst, imm = Imm}.
-
--spec mov64_reg(reg(), reg()) -> #instruction{}.
-mov64_reg(Dst, Src) ->
-    #instruction{code = ?BPF_ALU64 bor ?BPF_MOV bor ?BPF_X, dst_reg = Dst, src_reg = Src}.
-
--spec mov32_reg(reg(), reg()) -> #instruction{}.
-mov32_reg(Dst, Src) ->
-    #instruction{code = ?BPF_ALU bor ?BPF_MOV bor ?BPF_X, dst_reg = Dst, src_reg = Src}.
-
--spec mov64_imm(reg(), imm()) -> #instruction{}.
-mov64_imm(Dst, Imm) ->
-    #instruction{code = ?BPF_ALU64 bor ?BPF_MOV bor ?BPF_K, dst_reg = Dst, imm = Imm}.
-
--spec mov32_imm(reg(), imm()) -> #instruction{}.
-mov32_imm(Dst, Imm) ->
-    #instruction{code = ?BPF_ALU bor ?BPF_MOV bor ?BPF_K, dst_reg = Dst, imm = Imm}.
-
--spec emit_call(imm()) -> #instruction{}.
-emit_call(Func) ->
-    #instruction{code = ?BPF_JMP bor ?BPF_CALL, imm = Func}.
-
--spec exit_insn() -> #instruction{}.
-exit_insn() ->
-    #instruction{code = ?BPF_JMP bor ?BPF_EXIT}.
-
 -spec emit(beam_instruction(), rt()) -> #rt{}.
 emit(return, #rt{code = Code, head = Head} = Runtime) ->
-    Runtime#rt{code = [exit_insn() | Code], head = Head + 1};
+    Runtime#rt{code = [ebpf_instructions:exit_insn() | Code], head = Head + 1};
 emit({label, Label}, #rt{labels = Labels, head = Head} = Runtime) ->
     Runtime#rt{labels = Labels#{Label => Head}, head = Head + 1};
 emit({func_info, {atom, _M}, {atom, _F}, _A}, Runtime) ->
     Runtime;
 emit({move, {integer, Imm}, {x, X}}, #rt{code = Code, head = Head} = Runtime) ->
-    Runtime#rt{code = [mov32_imm(X, Imm) | Code], head = Head + 1};
+    Runtime#rt{code = [ebpf_instructions:mov32_imm(X, Imm) | Code], head = Head + 1};
 emit({move, {x, XSrc}, {x, XDst}}, #rt{code = Code, head = Head} = Runtime) ->
-    Runtime#rt{code = [mov32_reg(XDst, XSrc) | Code], head = Head + 1};
+    Runtime#rt{code = [ebpf_instructions:mov32_reg(XDst, XSrc) | Code], head = Head + 1};
 emit({allocate, StackNeed, Live}, #rt{stack_need = SN, live = L} = Runtime) ->
     Runtime#rt{stack_need = SN + StackNeed, live = L + Live};
 emit({call_ext, _Arity, {extfunc, bpf, Func, _Arity}}, #rt{code = Code, head = Head} = Runtime) ->
-    Runtime#rt{code = [emit_call(func_atom_to_integer(Func)) | Code], head = Head + 1};
+    Runtime#rt{
+        code = [ebpf_instructions:emit_call(func_atom_to_integer(Func)) | Code],
+        head = Head + 1
+    };
 emit({deallocate, _StackNeed}, Runtime) ->
     Runtime;
 emit(
@@ -126,11 +98,14 @@ emit(
             case {Arg1, Arg2} of
                 {{x, OutReg}, {integer, Integer}} ->
                     Runtime#rt{
-                        code = [alu64_imm(?BPF_ADD, OutReg, Integer) | Code],
+                        code = [ebpf_instructions:alu64_imm(?BPF_ADD, OutReg, Integer) | Code],
                         head = Head + 1
                     };
                 {{x, OutReg}, {x, InReg}} ->
-                    Runtime#rt{code = [alu64_reg(?BPF_ADD, OutReg, InReg) | Code], head = Head + 1}
+                    Runtime#rt{
+                        code = [ebpf_instructions:alu64_reg(?BPF_ADD, OutReg, InReg) | Code],
+                        head = Head + 1
+                    }
             end
     end.
 
