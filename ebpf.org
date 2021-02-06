@@ -1,0 +1,35 @@
+* Overview
+ebpf is an Erlang/OTP library for creating Linux eBPF programs
+from Erlang source code or BEAM files.
+
+** Modules
+*** [[file:src/ebpf.erl::%25%25%25-------------------------------------------------------------------][ebpf]]
+The main API of the library.
+Exposes the ability to compile .beam/.erl files to eBPF.
+
+The compilation flow is as follows:
+input.beam --disasm-->--
+                        \
+                         --> beam behaviour -> bpf program type ---link--> bpf module
+                         --> beam functions -> bpf functions ---'
+                        /
+input.erl --compile-->--
+**** TODO [[file:src/ebpf.erl::from_beam(#beam_file{][from_beam/1]] should take a .beam file and disassemble it itself
+
+*** ebpf_module
+**** TODO implement
+
+*** ebpf_link
+**** TODO implement
+
+*** ebpf_function
+**** TODO implement
+
+*** ebpf_helper
+**** TODO implement
+
+*** ebpf_instruction
+**** TODO rename from ebpf_instructions
+
+*** [[file:src/ebpf_load.erl::-module(ebpf_load).][ebpf_load]]
+**** TODO implement
