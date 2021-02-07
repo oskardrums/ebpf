@@ -37,6 +37,8 @@
 -define(BPF_LSH, 16#60).
 -define(BPF_RSH, 16#70).
 -define(BPF_NEG, 16#80).
+-define(BPF_MOD, 16#90).
+-define(BPF_XOR, 16#a0).
 -define(BPF_JA, 16#00).
 -define(BPF_JEQ, 16#10).
 -define(BPF_JGT, 16#20).
@@ -71,27 +73,230 @@
 -define(BPF_TAX, 16#00).
 -define(BPF_TXA, 16#80).
 
--type code() :: 0..255.
--type reg() :: 0..127.
--type off() :: -(1 bsl 15)..1 bsl 15.
--type imm() :: -(1 bsl 31)..1 bsl 31.
 
--record(instruction, {
-    code = 0 :: code(),
-    dst_reg = 0 :: reg(),
-    src_reg = 0 :: reg(),
-    off = 0 :: off(),
-    imm = 0 :: imm()
+-type bpf_alu_op() ::
+    '+'
+    | '-'
+    | '*'
+    | '/'
+    | 'bor'
+    | 'band'
+    | 'bsl'
+    | 'bsr'
+    | 'neg'
+    | 'bxor'
+    | 'rem'
+    | '='.
+
+-type bpf_prog_type() ::
+    'unspec'
+    | 'socket_filter'
+    | 'kprobe'
+    | 'sched_cls'
+    | 'sched_act'
+    | 'tracepoint'
+    | 'xdp'
+    | 'perf_event'
+    | 'cgroup_skb'
+    | 'cgroup_sock'
+    | 'lwt_in'
+    | 'lwt_out'
+    | 'lwt_xmit'
+    | 'sock_ops'
+    | 'sk_skb'
+    | 'cgroup_device'
+    | 'sk_msg'
+    | 'raw_tracepoint'
+    | 'cgroup_sock_addr'
+    | 'lwt_seg6local'
+    | 'lirc_mode2'
+    | 'sk_reuseport'
+    | 'flow_dissector'
+    | 'cgroup_sysctl'
+    | 'raw_tracepoint_writable'
+    | 'cgroup_sockopt'
+    | 'tracing'
+    | 'struct_ops'
+    | 'ext'
+    | 'lsm'
+    | 'sk_lookup'.
+
+-type bpf_helper() ::
+    'unspec'
+    | 'map_lookup_elem'
+    | 'map_update_elem'
+    | 'map_delete_elem'
+    | 'probe_read'
+    | 'ktime_get_ns'
+    | 'trace_printk'
+    | 'get_prandom_u32'
+    | 'get_smp_processor_id'
+    | 'skb_store_bytes'
+    | 'l3_csum_replace'
+    | 'l4_csum_replace'
+    | 'tail_call'
+    | 'clone_redirect'
+    | 'get_current_pid_tgid'
+    | 'get_current_uid_gid'
+    | 'get_current_comm'
+    | 'get_cgroup_classid'
+    | 'skb_vlan_push'
+    | 'skb_vlan_pop'
+    | 'skb_get_tunnel_key'
+    | 'skb_set_tunnel_key'
+    | 'perf_event_read'
+    | 'redirect'
+    | 'get_route_realm'
+    | 'perf_event_output'
+    | 'skb_load_bytes'
+    | 'get_stackid'
+    | 'csum_diff'
+    | 'skb_get_tunnel_opt'
+    | 'skb_set_tunnel_opt'
+    | 'skb_change_proto'
+    | 'skb_change_type'
+    | 'skb_under_cgroup'
+    | 'get_hash_recalc'
+    | 'get_current_task'
+    | 'probe_write_user'
+    | 'current_task_under_cgroup'
+    | 'skb_change_tail'
+    | 'skb_pull_data'
+    | 'csum_update'
+    | 'set_hash_invalid'
+    | 'get_numa_node_id'
+    | 'skb_change_head'
+    | 'xdp_adjust_head'
+    | 'probe_read_str'
+    | 'get_socket_cookie'
+    | 'get_socket_uid'
+    | 'set_hash'
+    | 'setsockopt'
+    | 'skb_adjust_room'
+    | 'redirect_map'
+    | 'sk_redirect_map'
+    | 'sock_map_update'
+    | 'xdp_adjust_meta'
+    | 'perf_event_read_value'
+    | 'perf_prog_read_value'
+    | 'getsockopt'
+    | 'override_return'
+    | 'sock_ops_cb_flags_set'
+    | 'msg_redirect_map'
+    | 'msg_apply_bytes'
+    | 'msg_cork_bytes'
+    | 'msg_pull_data'
+    | 'bind'
+    | 'xdp_adjust_tail'
+    | 'skb_get_xfrm_state'
+    | 'get_stack'
+    | 'skb_load_bytes_relative'
+    | 'fib_lookup'
+    | 'sock_hash_update'
+    | 'msg_redirect_hash'
+    | 'sk_redirect_hash'
+    | 'lwt_push_encap'
+    | 'lwt_seg6_store_bytes'
+    | 'lwt_seg6_adjust_srh'
+    | 'lwt_seg6_action'
+    | 'rc_repeat'
+    | 'rc_keydown'
+    | 'skb_cgroup_id'
+    | 'get_current_cgroup_id'
+    | 'get_local_storage'
+    | 'sk_select_reuseport'
+    | 'skb_ancestor_cgroup_id'
+    | 'sk_lookup_tcp'
+    | 'sk_lookup_udp'
+    | 'sk_release'
+    | 'map_push_elem'
+    | 'map_pop_elem'
+    | 'map_peek_elem'
+    | 'msg_push_data'
+    | 'msg_pop_data'
+    | 'rc_pointer_rel'
+    | 'spin_lock'
+    | 'spin_unlock'
+    | 'sk_fullsock'
+    | 'tcp_sock'
+    | 'skb_ecn_set_ce'
+    | 'get_listener_sock'
+    | 'skc_lookup_tcp'
+    | 'tcp_check_syncookie'
+    | 'sysctl_get_name'
+    | 'sysctl_get_current_value'
+    | 'sysctl_get_new_value'
+    | 'sysctl_set_new_value'
+    | 'strtol'
+    | 'strtoul'
+    | 'sk_storage_get'
+    | 'sk_storage_delete'
+    | 'send_signal'
+    | 'tcp_gen_syncookie'
+    | 'skb_output'
+    | 'probe_read_user'
+    | 'probe_read_kernel'
+    | 'probe_read_user_str'
+    | 'probe_read_kernel_str'
+    | 'tcp_send_ack'
+    | 'send_signal_thread'
+    | 'jiffies64'
+    | 'read_branch_records'
+    | 'get_ns_current_pid_tgid'
+    | 'xdp_output'
+    | 'get_netns_cookie'
+    | 'get_current_ancestor_cgroup_id'
+    | 'sk_assign'
+    | 'ktime_get_boot_ns'
+    | 'seq_printf'
+    | 'seq_write'
+    | 'sk_cgroup_id'
+    | 'sk_ancestor_cgroup_id'
+    | 'ringbuf_output'
+    | 'ringbuf_reserve'
+    | 'ringbuf_submit'
+    | 'ringbuf_discard'
+    | 'ringbuf_query'
+    | 'csum_level'
+    | 'skc_to_tcp6_sock'
+    | 'skc_to_tcp_sock'
+    | 'skc_to_tcp_timewait_sock'
+    | 'skc_to_tcp_request_sock'
+    | 'skc_to_udp6_sock'
+    | 'get_task_stack'
+    | 'load_hdr_opt'
+    | 'store_hdr_opt'
+    | 'reserve_hdr_opt'
+    | 'inode_storage_get'
+    | 'inode_storage_delete'
+    | 'd_path'
+    | 'copy_from_user'
+    | 'snprintf_btf'
+    | 'seq_printf_btf'
+    | 'skb_cgroup_classid'
+    | 'redirect_neigh'
+    | 'per_cpu_ptr'
+    | 'this_cpu_ptr'
+    | 'redirect_peer'
+    | 'task_storage_get'
+    | 'task_storage_delete'
+    | 'get_current_task_btf'
+    | 'bprm_opts_set'
+    | 'ktime_get_coarse_ns'
+    | 'ima_inode_hash'
+    | 'sock_from_file'.
+
+-type bpf_opcode() :: 0..255.
+-type bpf_reg() :: 0..127.
+-type bpf_off() :: -(1 bsl 15)..1 bsl 15.
+-type bpf_imm() :: -(1 bsl 31)..1 bsl 31.
+
+-record(bpf_instruction, {
+    code = 0 :: bpf_opcode(),
+    dst_reg = 0 :: bpf_reg(),
+    src_reg = 0 :: bpf_reg(),
+    off = 0 :: bpf_off(),
+    imm = 0 :: bpf_imm()
 }).
 
--type instruction() :: #instruction{}.
-
--record(rt, {
-    code = [] :: [instruction()],
-    labels = #{} :: #{term() => non_neg_integer()},
-    head = 0 :: non_neg_integer(),
-    stack_need = 0 :: non_neg_integer(),
-    live = 0 :: non_neg_integer()
-}).
-
--type rt() :: #rt{}.
+-type bpf_instruction() :: #bpf_instruction{}.

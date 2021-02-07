@@ -1,9 +1,0 @@
-* Useful Links
-  [[info:org#Structure%20editing][Org-mode useful info]]
-* Tasks
-** TODO implement everything
-   - implement this
-   - do that
-   - foo
-   - bar
-- f(Bin), f(F), f(Beam), {ok, _, Bin} = compile:noenv_file("/tmp/e.erl", [binary, no_line_info]), Beam = beam_disasm:file(Bin).
