@@ -6,7 +6,7 @@
 -module(ebpf_lib).
 
 %% API
--export([load/2, verify/2]).
+-export([load/2, verify/2, disassemble/1]).
 
 -on_load(init/0).
 
@@ -46,6 +46,21 @@
     | 'lsm'
     | 'sk_lookup'.
 
+-type bpf_code() :: 0..255.
+-type bpf_reg() :: 0..127.
+-type bpf_off() :: -(1 bsl 15)..1 bsl 15.
+-type bpf_imm() :: -(1 bsl 31)..1 bsl 31.
+
+-record(instruction, {
+    code = 0 :: bpf_code(),
+    dst_reg = 0 :: bpf_reg(),
+    src_reg = 0 :: bpf_reg(),
+    off = 0 :: bpf_off(),
+    imm = 0 :: bpf_imm()
+}).
+
+-type bpf_instruction() :: #instruction{}.
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -55,26 +70,58 @@
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
--spec verify(bpf_prog_type(), binary()) -> 'ok' | {'error', term()}.
-verify(BpfProgramType, BpfProgramBin) ->
-    ebpf_verify_program(bpf_prog_type_to_int(BpfProgramType), BpfProgramBin).
+-spec verify(bpf_prog_type(), [bpf_instruction()]) -> 'ok' | {'error', term()}.
+verify(BpfProgramType, BpfInstructions) ->
+    bpf_verify_program(
+        bpf_prog_type_to_int(BpfProgramType),
+        bpf_instructions_to_binary(BpfInstructions)
+    ).
 
--spec load(bpf_prog_type(), binary()) -> {'ok', non_neg_integer()} | {'error', term()}.
-load(BpfProgramType, BpfProgramBin) ->
-    ebpf_load_program(bpf_prog_type_to_int(BpfProgramType), BpfProgramBin).
+-spec load(bpf_prog_type(), [bpf_instruction()]) -> {'ok', non_neg_integer()} | {'error', term()}.
+load(BpfProgramType, BpfInstructions) ->
+    bpf_load_program(
+        bpf_prog_type_to_int(BpfProgramType),
+        bpf_instructions_to_binary(BpfInstructions)
+    ).
+
+disassemble(BpfProgramBin) ->
+    lists:reverse(disassemble(BpfProgramBin, [])).
+
+disassemble(<<>>, Acc) ->
+    Acc;
+disassemble(<<InstructionBin:64, More/binary>>, Acc) ->
+    disassemble(More, [bpf_decode(InstructionBin) | Acc]).
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
--spec ebpf_verify_program(non_neg_integer(), binary()) -> 'ok' | {'error', term()}.
-ebpf_verify_program(_BpfProgramType, _BpfProgramBin) ->
+-spec bpf_verify_program(non_neg_integer(), binary()) -> 'ok' | {'error', term()}.
+bpf_verify_program(_BpfProgramType, _BpfProgramBin) ->
     not_loaded(?LINE).
 
--spec ebpf_load_program(non_neg_integer(), binary()) ->
+-spec bpf_load_program(non_neg_integer(), binary()) ->
     {'ok', non_neg_integer()} | {'error', term()}.
-ebpf_load_program(_BpfProgramType, _BpfProgramBin) ->
+bpf_load_program(_BpfProgramType, _BpfProgramBin) ->
     not_loaded(?LINE).
+
+bpf_instructions_to_binary(BpfInstructions) ->
+    lists:foldl(
+        fun(Instruction, Acc) ->
+            EncodedInstruction = bpf_encode(Instruction),
+            <<Acc/binary, EncodedInstruction/binary>>
+        end,
+        <<>>,
+        BpfInstructions
+    ).
+
+-spec bpf_encode(#instruction{}) -> binary().
+bpf_encode(#instruction{code = Code, dst_reg = Dst, src_reg = Src, off = Off, imm = Imm}) ->
+    <<Code:8/unsigned, Dst:4/unsigned, Src:4/unsigned, Off:16/signed, Imm:32/signed>>.
+
+-spec bpf_decode(binary()) -> #instruction{}.
+bpf_decode(<<Code:8/unsigned, Dst:4/unsigned, Src:4/unsigned, Off:16/signed, Imm:32/signed>>) ->
+    #instruction{code = Code, dst_reg = Dst, src_reg = Src, off = Off, imm = Imm}.
 
 -spec bpf_prog_type_to_int(bpf_prog_type()) -> non_neg_integer().
 bpf_prog_type_to_int(unspec) -> 0;

@@ -135,8 +135,8 @@ ebpf_verify_program(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ErlNifFunc nif_funcs[] = {
-				 {"ebpf_load_program", 2, ebpf_load_program},
-				 {"ebpf_verify_program", 2, ebpf_verify_program}
+				 {"bpf_load_program", 2, ebpf_load_program},
+				 {"bpf_verify_program", 2, ebpf_verify_program}
 };
 
 ERL_NIF_INIT(ebpf_lib, nif_funcs, NULL, NULL, NULL, NULL);
