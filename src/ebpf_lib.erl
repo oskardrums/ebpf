@@ -1,7 +1,10 @@
 %%%-------------------------------------------------------------------
+%%% @author moskar <moskar.drummer@gmail.com>
+%%% @copyright (C) 2021, moskar
 %%% @doc
-%%%
+%%% Low level Linux eBPF library
 %%% @end
+%%% Created :  7 Feb 2021 by user <moskar.drummer@gmail.home>
 %%%-------------------------------------------------------------------
 -module(ebpf_lib).
 
@@ -24,12 +27,14 @@
     alu64_reg/3,
     alu32_reg/3,
     alu32_imm/3,
-    emit_call/1
+    emit_call/1,
+    bpf_helper_to_int/1,
+    bpf_alu_op_to_int/1
 ]).
 
 -on_load(init/0).
 
--define(APPNAME, ?MODULE).
+-define(APPNAME, ebpf).
 -define(LIBNAME, ?MODULE).
 
 -include("ebpf.hrl").
@@ -40,7 +45,6 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% @spec
 %% @end
 %%--------------------------------------------------------------------
 -spec assemble([bpf_instruction()]) -> binary().
@@ -54,7 +58,7 @@ disassemble(BpfProgramBin) ->
 disassemble(<<>>, Acc) ->
     Acc;
 disassemble(<<InstructionBin:64, More/binary>>, Acc) ->
-    disassemble(More, [bpf_decode(InstructionBin) | Acc]).
+    disassemble(More, [bpf_instruction_decode(InstructionBin) | Acc]).
 
 -spec verify(bpf_prog_type(), [bpf_instruction()]) -> 'ok' | {'error', term()}.
 verify(BpfProgramType, BpfInstructions) ->
@@ -165,23 +169,35 @@ not_loaded(Line) ->
 %%% Internal functions
 %%%===================================================================
 
+%%--------------------------------------------------------------------
+%% @doc Binary encodes a list of eBPF instructions.
+%% @end
+%%--------------------------------------------------------------------
 -spec bpf_instructions_to_binary([bpf_instruction()]) -> binary().
 bpf_instructions_to_binary(BpfInstructions) ->
     lists:foldl(
         fun(Instruction, Acc) ->
-            EncodedInstruction = bpf_encode(Instruction),
+            EncodedInstruction = bpf_instruction_encode(Instruction),
             <<Acc/binary, EncodedInstruction/binary>>
         end,
         <<>>,
         BpfInstructions
     ).
 
--spec bpf_encode(bpf_instruction()) -> binary().
-bpf_encode(#bpf_instruction{code = Code, dst_reg = Dst, src_reg = Src, off = Off, imm = Imm}) ->
+-spec bpf_instruction_encode(bpf_instruction()) -> binary().
+bpf_instruction_encode(#bpf_instruction{
+    code = Code,
+    dst_reg = Dst,
+    src_reg = Src,
+    off = Off,
+    imm = Imm
+}) ->
     <<Code:8/unsigned, Dst:4/unsigned, Src:4/unsigned, Off:16/signed, Imm:32/signed>>.
 
--spec bpf_decode(binary()) -> bpf_instruction().
-bpf_decode(<<Code:8/unsigned, Dst:4/unsigned, Src:4/unsigned, Off:16/signed, Imm:32/signed>>) ->
+-spec bpf_instruction_decode(binary()) -> bpf_instruction().
+bpf_instruction_decode(
+    <<Code:8/unsigned, Dst:4/unsigned, Src:4/unsigned, Off:16/signed, Imm:32/signed>>
+) ->
     #bpf_instruction{code = Code, dst_reg = Dst, src_reg = Src, off = Off, imm = Imm}.
 
 -spec bpf_prog_type_to_int(bpf_prog_type()) -> non_neg_integer().
@@ -383,27 +399,15 @@ bpf_helper_to_int(ima_inode_hash) -> 161;
 bpf_helper_to_int(sock_from_file) -> 162.
 
 -spec bpf_alu_op_to_int(bpf_alu_op()) -> bpf_opcode().
-bpf_alu_op_to_int('+') ->
-    ?BPF_ADD;
-bpf_alu_op_to_int('-') ->
-    ?BPF_SUB;
-bpf_alu_op_to_int('*') ->
-    ?BPF_MUL;
-bpf_alu_op_to_int('/') ->
-    ?BPF_DIV;
-bpf_alu_op_to_int('bor') ->
-    ?BPF_OR;
-bpf_alu_op_to_int('band') ->
-    ?BPF_AND;
-bpf_alu_op_to_int('bsl') ->
-    ?BPF_LSH;
-bpf_alu_op_to_int('bsr') ->
-    ?BPF_RSH;
-bpf_alu_op_to_int('neg') ->
-    ?BPF_NEG;
-bpf_alu_op_to_int('bxor') ->
-    ?BPF_XOR;
-bpf_alu_op_to_int('rem') ->
-    ?BPF_MOD;
-bpf_alu_op_to_int('=') ->
-    ?BPF_MOV.
+bpf_alu_op_to_int('+') -> ?BPF_ADD;
+bpf_alu_op_to_int('-') -> ?BPF_SUB;
+bpf_alu_op_to_int('*') -> ?BPF_MUL;
+bpf_alu_op_to_int('/') -> ?BPF_DIV;
+bpf_alu_op_to_int('bor') -> ?BPF_OR;
+bpf_alu_op_to_int('band') -> ?BPF_AND;
+bpf_alu_op_to_int('bsl') -> ?BPF_LSH;
+bpf_alu_op_to_int('bsr') -> ?BPF_RSH;
+bpf_alu_op_to_int('neg') -> ?BPF_NEG;
+bpf_alu_op_to_int('bxor') -> ?BPF_XOR;
+bpf_alu_op_to_int('rem') -> ?BPF_MOD;
+bpf_alu_op_to_int('=') -> ?BPF_MOV.
