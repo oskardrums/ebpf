@@ -13,7 +13,8 @@
     assemble/1,
     disassemble/1,
     load/2,
-    verify/2
+    verify/2,
+    attach_socket_filter/2
 ]).
 
 %% Instruction construction
@@ -45,33 +46,67 @@
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Assembles a list of bpf_instruction records into
+%% binary form which can then be loaded to the kernel via load/2.
 %% @end
 %%--------------------------------------------------------------------
 -spec assemble([bpf_instruction()]) -> binary().
 assemble(BpfInstructions) ->
     bpf_instructions_to_binary(BpfInstructions).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Disassembles an eBPF program in binary form to a
+%% list of bpf_instruction records.
+%% @end
+%%--------------------------------------------------------------------
 -spec disassemble(binary()) -> [bpf_instruction()].
 disassemble(BpfProgramBin) ->
     lists:reverse(disassemble(BpfProgramBin, [])).
 
+-spec disassemble(binary(), [bpf_instruction()]) -> [bpf_instruction()].
 disassemble(<<>>, Acc) ->
     Acc;
 disassemble(<<InstructionBin:64, More/binary>>, Acc) ->
     disassemble(More, [bpf_instruction_decode(InstructionBin) | Acc]).
 
--spec verify(bpf_prog_type(), [bpf_instruction()]) -> 'ok' | {'error', term()}.
-verify(BpfProgramType, BpfInstructions) ->
+%%--------------------------------------------------------------------
+%% @doc
+%% Verifies an eBPF program in binary form with the kernel's verifier.
+%% Reports errors in the program, if any, in textual form as returned
+%% by the kernel.
+%% @end
+%%--------------------------------------------------------------------
+-spec verify(bpf_prog_type(), [binary()]) -> 'ok' | {'error', term()}.
+verify(BpfProgramType, BpfProgramBin) ->
     bpf_verify_program(
         bpf_prog_type_to_int(BpfProgramType),
-        bpf_instructions_to_binary(BpfInstructions)
+        BpfProgramBin
     ).
 
--spec load(bpf_prog_type(), [bpf_instruction()]) -> {'ok', non_neg_integer()} | {'error', term()}.
-load(BpfProgramType, BpfInstructions) ->
+%%--------------------------------------------------------------------
+%% @doc
+%% Attempts to load an eBPF program in binary form to the kernel.
+%% see verify/1 for debugging and checking program validity.
+%% @end
+%%--------------------------------------------------------------------
+-spec load(bpf_prog_type(), [binary()]) -> {'ok', non_neg_integer()} | {'error', term()}.
+load(BpfProgramType, BpfProgramBin) ->
     bpf_load_program(
         bpf_prog_type_to_int(BpfProgramType),
-        bpf_instructions_to_binary(BpfInstructions)
+        BpfProgramBin
+    ).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Applies a loaded eBPF program as returned by load/1 to a socket.
+%% @end
+%%--------------------------------------------------------------------
+-spec attach_socket_filter(non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', term()}.
+attach_socket_filter(SockFd, ProgFd) ->
+    bpf_attach_socket_filter(
+        SockFd,
+        ProgFd
     ).
 
 %%%===================================================================
@@ -135,8 +170,12 @@ exit_insn() ->
     #bpf_instruction{code = ?BPF_JMP bor ?BPF_EXIT}.
 
 %%%===================================================================
-%%% NIFs and NIF related functions
+%%% Internal functions
 %%%===================================================================
+
+%%%-------------------------------------------------------------------
+%%% NIFs and NIF related functions
+%%%-------------------------------------------------------------------
 
 -spec bpf_verify_program(non_neg_integer(), binary()) -> 'ok' | {'error', term()}.
 bpf_verify_program(_BpfProgramType, _BpfProgramBin) ->
@@ -145,6 +184,10 @@ bpf_verify_program(_BpfProgramType, _BpfProgramBin) ->
 -spec bpf_load_program(non_neg_integer(), binary()) ->
     {'ok', non_neg_integer()} | {'error', term()}.
 bpf_load_program(_BpfProgramType, _BpfProgramBin) ->
+    not_loaded(?LINE).
+
+-spec bpf_attach_socket_filter(non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', term()}.
+bpf_attach_socket_filter(_SockFd, _ProgFd) ->
     not_loaded(?LINE).
 
 init() ->
@@ -165,9 +208,9 @@ init() ->
 not_loaded(Line) ->
     erlang:nif_error({not_loaded, [{module, ?MODULE}, {line, Line}]}).
 
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
+%%%-------------------------------------------------------------------
+%%% Other internal functions
+%%%-------------------------------------------------------------------
 
 %%--------------------------------------------------------------------
 %% @doc Binary encodes a list of eBPF instructions.
