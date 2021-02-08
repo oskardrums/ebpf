@@ -18,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Deps
-      run: cd /tmp; git clone https://github.com/WolfgangSt/libelf.git; cd libelf; ./configure; make; make install; cd /tmp; wget https://github.com/libbpf/libbpf/archive/v0.3.tar.gz; tar xzf v0.3.tar.gz; cd libbpf-0.3/src; make; make install
+      run: echo "deb http://deb.debian.org/debian buster contrib non-free" > /etc/apt/sources.list.d/debian-non-free.list && apt -qq update && apt install libbpf-dev
     - name: Compile
       run: rebar3 compile
     - name: Run tests
