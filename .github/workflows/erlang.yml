@@ -17,6 +17,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Deps
+      run: echo "deb http://deb.debian.org/debian buster contrib non-free" > /etc/apt/sources.list.d/debian-non-free.list && apt -qq update && apt -y install libbpf-dev
     - name: Compile
       run: rebar3 compile
     - name: Run tests
