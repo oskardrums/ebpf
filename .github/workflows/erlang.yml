@@ -18,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Deps
-      run: apt install libbpf-dev
+      run: apt install libelf-dev; cd /tmp; wget https://github.com/libbpf/libbpf/archive/v0.3.tar.gz; tar xzf v0.3.tar.gz; cd libbpf-0.3/src; make; make install
     - name: Compile
       run: rebar3 compile
     - name: Run tests
