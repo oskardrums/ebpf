@@ -23,7 +23,13 @@
     stx_mem/4,
     emit_call/1,
     bpf_helper_to_int/1,
-    bpf_alu_op_to_int/1
+    bpf_alu_op_to_int/1,
+    stack_printk/1,
+    stack_printk/2,
+    push_binary/1,
+    push_binary/2,
+    push_string/1,
+    push_string/2
 ]).
 
 -include("ebpf.hrl").
@@ -105,6 +111,33 @@ stx_mem(Size, Dst, Src, Off) ->
         src_reg = Src,
         off = Off
     }.
+
+-spec stack_printk(string()) -> [bpf_instruction()].
+stack_printk(String) ->
+    stack_printk(String, 0).
+
+-spec stack_printk(string(), integer()) -> [bpf_instruction()].
+stack_printk(String, StackHead) ->
+    {Instructions, _NewStackHead} = push_string(String, StackHead),
+    Instructions.
+
+-spec push_string(string()) -> {[bpf_instruction()], integer()}.
+push_string(String) ->
+    push_string(String, 0).
+
+-spec push_string(string(), integer()) -> {[bpf_instruction()], integer()}.
+push_string(String, StackHead) ->
+    push_binary(list_to_binary(String), StackHead).
+
+-spec push_binary(binary()) -> {[bpf_instruction()], integer()}.
+push_binary(Bin) ->
+    push_binary(Bin, 0).
+
+-spec push_binary(binary(), integer()) -> {[bpf_instruction()], integer()}.
+push_binary(Bin, Head) ->
+    Size = byte_size(Bin),
+    NewHead = Head - (Size + ((4 - (Size rem 4)) rem 4)),
+    {store_buffer(Bin, NewHead), NewHead}.
 
 %%%===================================================================
 %%% Internal functions
@@ -294,3 +327,15 @@ bpf_alu_op_to_int('neg') -> ?BPF_NEG;
 bpf_alu_op_to_int('bxor') -> ?BPF_XOR;
 bpf_alu_op_to_int('rem') -> ?BPF_MOD;
 bpf_alu_op_to_int('=') -> ?BPF_MOV.
+
+-spec store_buffer(binary(), integer()) -> [bpf_instruction()].
+store_buffer(Bin, Off) ->
+    store_buffer(Bin, Off, []).
+
+-spec store_buffer(binary(), integer(), [bpf_instruction()]) -> [bpf_instruction()].
+store_buffer(<<Imm:32/big-signed-integer, Bin/binary>>, Off, Acc) ->
+    store_buffer(Bin, Off + 4, [st_mem(32, 10, Off, Imm) | Acc]);
+store_buffer(<<Imm/big-signed-integer>>, Off, Acc) ->
+    store_buffer(<<>>, Off + 4, [st_mem(32, 10, Off, Imm) | Acc]);
+store_buffer(<<>>, _Off, Acc) ->
+    Acc.
