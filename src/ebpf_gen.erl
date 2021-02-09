@@ -24,8 +24,8 @@
     emit_call/1,
     bpf_helper_to_int/1,
     bpf_alu_op_to_int/1,
-    printk/1,
-    printk/2,
+    stack_printk/1,
+    stack_printk/2,
     push_binary/1,
     push_binary/2,
     push_string/1,
@@ -112,11 +112,12 @@ stx_mem(Size, Dst, Src, Off) ->
         off = Off
     }.
 
--spec printk(string()) -> [bpf_instruction()].
-printk(String) ->
-    printk(String, 0).
--spec printk(string(), integer()) -> [bpf_instruction()].
-printk(String, StackHead) ->
+-spec stack_printk(string()) -> [bpf_instruction()].
+stack_printk(String) ->
+    stack_printk(String, 0).
+
+-spec stack_printk(string(), integer()) -> [bpf_instruction()].
+stack_printk(String, StackHead) ->
     {Instructions, _NewStackHead} = push_string(String, StackHead),
     Instructions.
 
