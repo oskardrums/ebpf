@@ -159,11 +159,11 @@ bpf_instruction_encode(#bpf_instruction{
     off = Off,
     imm = Imm
 }) ->
-    <<Code:8/unsigned, Dst:4/unsigned, Src:4/unsigned, Off:16/signed, Imm:32/signed>>.
+    <<Code:8/unsigned, Src:4/unsigned, Dst:4/unsigned, Off:16/little-signed, Imm:32/little-signed>>.
 
 -spec bpf_instruction_decode(binary()) -> bpf_instruction().
 bpf_instruction_decode(
-    <<Code:8/unsigned, Dst:4/unsigned, Src:4/unsigned, Off:16/signed, Imm:32/signed>>
+    <<Code:8/unsigned, Src:4/unsigned, Dst:4/unsigned, Off:16/little-signed, Imm:32/little-signed>>
 ) ->
     #bpf_instruction{code = Code, dst_reg = Dst, src_reg = Src, off = Off, imm = Imm}.
 
