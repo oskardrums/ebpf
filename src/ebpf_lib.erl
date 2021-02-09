@@ -67,7 +67,7 @@ disassemble(BpfProgramBin) ->
 -spec disassemble(binary(), [bpf_instruction()]) -> [bpf_instruction()].
 disassemble(<<>>, Acc) ->
     Acc;
-disassemble(<<InstructionBin:64, More/binary>>, Acc) ->
+disassemble(<<InstructionBin:8/binary-unit:8, More/binary>>, Acc) ->
     disassemble(More, [bpf_instruction_decode(InstructionBin) | Acc]).
 
 %%--------------------------------------------------------------------
@@ -77,7 +77,7 @@ disassemble(<<InstructionBin:64, More/binary>>, Acc) ->
 %% by the kernel.
 %% @end
 %%--------------------------------------------------------------------
--spec verify(bpf_prog_type(), [binary()]) -> 'ok' | {'error', term()}.
+-spec verify(bpf_prog_type(), binary()) -> 'ok' | {'error', term()}.
 verify(BpfProgramType, BpfProgramBin) ->
     bpf_verify_program(
         bpf_prog_type_to_int(BpfProgramType),
@@ -90,7 +90,7 @@ verify(BpfProgramType, BpfProgramBin) ->
 %% see verify/1 for debugging and checking program validity.
 %% @end
 %%--------------------------------------------------------------------
--spec load(bpf_prog_type(), [binary()]) -> {'ok', non_neg_integer()} | {'error', term()}.
+-spec load(bpf_prog_type(), binary()) -> {'ok', non_neg_integer()} | {'error', term()}.
 load(BpfProgramType, BpfProgramBin) ->
     bpf_load_program(
         bpf_prog_type_to_int(BpfProgramType),
