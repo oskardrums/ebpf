@@ -629,11 +629,11 @@ mk_error(ErlNifEnv* env, const char* mesg)
 }
 
 static ERL_NIF_TERM
-xdp(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+ebpf_attach_xdp(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
   int prog_fd = -1;
   int if_index = -1;
-  ErlNifBinary binary_intructions = {0,};
+  int res = 0;
 
   if(argc != 2)
     {
@@ -645,25 +645,17 @@ xdp(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
       return mk_error(env, "bad_if_index");
     }
 
-  if(!enif_inspect_binary(env, argv[1], &binary_intructions))
+  if(!enif_get_int(env, argv[1], &prog_fd))
     {
-      return mk_error(env, "not_a_binary");
+      return mk_error(env, "bad_fd");
     }
 
-  prog_fd = bpf_load_program(
-			     BPF_PROG_TYPE_XDP,
-			     (const struct bpf_insn *)binary_intructions.data,
-			     binary_intructions.size / 8,
-			     "GPL",
-			     0,
-			     NULL,
-			     0);
-  if (prog_fd < 0) {
-    return mk_error(env, "bpf_load_program");
+  res = bpf_set_link_xdp_fd(if_index, prog_fd, 0);
+
+  if(res < 0){
+    return mk_error(env, erl_errno_id(errno));
   }
-  if (bpf_set_link_xdp_fd(if_index, prog_fd, 0) < 0) {
-    return mk_error(env, "bpf_set_link_xdp_fd");
-  }
+  
   return mk_atom(env, "ok");
 }
 
@@ -775,6 +767,7 @@ ebpf_attach_socket_filter(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 static ErlNifFunc nif_funcs[] = {
 				 {"bpf_load_program", 2, ebpf_load_program},
 				 {"bpf_attach_socket_filter", 2, ebpf_attach_socket_filter},
+				 {"bpf_attach_xdp", 2, ebpf_attach_xdp},
 				 {"bpf_verify_program", 2, ebpf_verify_program}
 };
 

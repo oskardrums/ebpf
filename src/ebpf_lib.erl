@@ -14,7 +14,8 @@
     disassemble/1,
     load/2,
     verify/2,
-    attach_socket_filter/2
+    attach_socket_filter/2,
+    attach_xdp/2
 ]).
 
 -on_load(init/0).
@@ -93,6 +94,19 @@ attach_socket_filter(SockFd, ProgFd) ->
         ProgFd
     ).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Applies a loaded eBPF XDP program as returned by load/1 to
+%% a network interface.
+%% @end
+%%--------------------------------------------------------------------
+-spec attach_xdp(string() | non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', term()}.
+attach_xdp(IfIndex, ProgFd) when is_integer(IfIndex) ->
+    bpf_attach_xdp(IfIndex, ProgFd);
+attach_xdp(IfName, ProgFd) when is_list(IfName) ->
+    {ok, IfIndex} = net:if_name2index(IfName),
+    bpf_attach_xdp(IfIndex, ProgFd).
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -112,6 +126,10 @@ bpf_load_program(_BpfProgramType, _BpfProgramBin) ->
 
 -spec bpf_attach_socket_filter(non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', term()}.
 bpf_attach_socket_filter(_SockFd, _ProgFd) ->
+    not_loaded(?LINE).
+
+-spec bpf_attach_xdp(non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', term()}.
+bpf_attach_xdp(_IfIndex, _ProgFd) ->
     not_loaded(?LINE).
 
 init() ->
