@@ -286,6 +286,8 @@
     | 'ima_inode_hash'
     | 'sock_from_file'.
 
+-type bpf_size() :: non_neg_integer().
+
 -type bpf_opcode() :: 0..255.
 -type bpf_reg() :: 0..127.
 -type bpf_off() :: -(1 bsl 15)..1 bsl 15.
