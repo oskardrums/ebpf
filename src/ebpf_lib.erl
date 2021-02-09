@@ -28,6 +28,7 @@
     alu64_reg/3,
     alu32_reg/3,
     alu32_imm/3,
+    st_mem/4,
     emit_call/1,
     bpf_helper_to_int/1,
     bpf_alu_op_to_int/1
@@ -169,6 +170,24 @@ emit_call(Func) ->
 exit_insn() ->
     #bpf_instruction{code = ?BPF_JMP bor ?BPF_EXIT}.
 
+-spec st_mem(bpf_size(), bpf_reg(), bpf_off(), bpf_imm()) -> bpf_instruction().
+st_mem(Size, Dst, Off, Imm) ->
+    #bpf_instruction{
+        code = ?BPF_ST bor bpf_size_to_int(Size) bor ?BPF_MEM,
+        dst_reg = Dst,
+        off = Off,
+        imm = Imm
+    }.
+
+-spec stx_mem(bpf_size(), bpf_reg(), bpf_reg(), bpf_off()) -> bpf_instruction().
+stx_mem(Size, Dst, Src, Off) ->
+    #bpf_instruction{
+        code = ?BPF_STX bor bpf_size_to_int(Size) bor ?BPF_MEM,
+        dst_reg = Dst,
+        src_reg = Size,
+        off = Off
+    }.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -242,6 +261,12 @@ bpf_instruction_decode(
     <<Code:8/unsigned, Dst:4/unsigned, Src:4/unsigned, Off:16/signed, Imm:32/signed>>
 ) ->
     #bpf_instruction{code = Code, dst_reg = Dst, src_reg = Src, off = Off, imm = Imm}.
+
+-spec bpf_size_to_int(bpf_size()) -> non_neg_integer().
+bpf_size_to_int(8) -> ?BPF_B;
+bpf_size_to_int(16) -> ?BPF_H;
+bpf_size_to_int(32) -> ?BPF_W;
+bpf_size_to_int(64) -> ?BPF_DW.
 
 -spec bpf_prog_type_to_int(bpf_prog_type()) -> non_neg_integer().
 bpf_prog_type_to_int(unspec) -> 0;
