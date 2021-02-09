@@ -330,6 +330,7 @@ bpf_alu_op_to_int('=') -> ?BPF_MOV.
 -spec store_buffer(binary(), integer()) -> [bpf_instruction()].
 store_buffer(Bin, Off) ->
     store_buffer(Bin, Off, []).
+
 -spec store_buffer(binary(), integer(), [bpf_instruction()]) -> [bpf_instruction()].
 store_buffer(<<Imm:32/big-signed-integer, Bin/binary>>, Off, Acc) ->
     store_buffer(Bin, Off + 4, [st_mem(32, 10, Off, Imm) | Acc]);
