@@ -118,7 +118,15 @@ stack_printk(String) ->
 
 -spec stack_printk(string(), integer()) -> [bpf_instruction()].
 stack_printk(String, StackHead) ->
-    {Instructions, _NewStackHead} = push_string(String, StackHead),
+    {Instructions0, NewStackHead} = push_string(String, StackHead),
+    Instructions =
+        Instructions0 ++
+            [
+                mov64_reg(1, 10),
+                alu64_imm(add, 1, NewStackHead),
+                mov64_imm(2, -NewStackHead),
+                emit_call(trace_printk)
+            ],
     Instructions.
 
 -spec push_string(string()) -> {[bpf_instruction()], integer()}.
