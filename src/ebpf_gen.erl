@@ -335,7 +335,7 @@ store_buffer(Bin, Off) ->
 -spec store_buffer(binary(), integer(), [bpf_instruction()]) -> [bpf_instruction()].
 store_buffer(<<Imm:32/big-signed-integer, Bin/binary>>, Off, Acc) ->
     store_buffer(Bin, Off + 4, [st_mem(32, 10, Off, Imm) | Acc]);
-store_buffer(<<Imm/big-signed-integer>>, Off, Acc) ->
-    store_buffer(<<>>, Off + 4, [st_mem(32, 10, Off, Imm) | Acc]);
 store_buffer(<<>>, _Off, Acc) ->
-    Acc.
+    Acc;
+store_buffer(BinImm, Off, Acc) ->
+    store_buffer(<<BinImm/binary, 0:(32 - bit_size(BinImm))>>, Off, Acc).
