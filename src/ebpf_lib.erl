@@ -62,7 +62,7 @@ disassemble(<<InstructionBin:8/binary-unit:8, More/binary>>, Acc) ->
 %% by the kernel.
 %% @end
 %%--------------------------------------------------------------------
--spec verify(bpf_prog_type(), binary()) -> 'ok' | {'error', term()}.
+-spec verify(bpf_prog_type(), binary()) -> {'ok', string()} | {'error', term()}.
 verify(BpfProgramType, BpfProgramBin) ->
     bpf_verify_program(
         bpf_prog_type_to_int(BpfProgramType),
@@ -124,7 +124,7 @@ attach_xdp(IfName, ProgFd) when is_list(IfName) ->
     non_neg_integer(),
     non_neg_integer(),
     string()
-) -> 'ok' | {'error', atom()} | {'error', atom(), string()}.
+) -> {'ok', string()} | {'error', atom()} | {'error', atom(), string()}.
 bpf_verify_program(_BpfProgramType, _BpfProgramBin, _LogBufferSize, _KernelVersion, _License) ->
     not_loaded(?LINE).
 
