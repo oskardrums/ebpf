@@ -73,9 +73,9 @@
 -define(BPF_TAX, 16#00).
 -define(BPF_TXA, 16#80).
 
-
 -type bpf_alu_op() ::
     '+'
+    | 'add'
     | '-'
     | '*'
     | '/'
