@@ -21,7 +21,13 @@ jobs:
       run: echo "deb http://deb.debian.org/debian buster contrib non-free" > /etc/apt/sources.list.d/debian-non-free.list && apt -qq update && apt -y install libbpf-dev
     - name: Compile
       run: rebar3 compile
+    - name: Build docs
+      run: rebar3 edoc
     - name: Run tests
       run: rebar3 do eunit, ct
+    - name: Run property tests
+      run: rebar3 proper
+    - name: Run regression tests
+      run: rebar3 proper --regressions
     - name: Run dialyzer
       run: rebar3 dialyzer
