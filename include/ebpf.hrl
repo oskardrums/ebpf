@@ -75,20 +75,22 @@
 -define(BPF_TAX, 16#00).
 -define(BPF_TXA, 16#80).
 
+-type bpf_ld_mode() :: 'imm' | 'abs' | 'mem' | 'ind' | 'xadd'.
+
 -type bpf_alu_op() ::
-    '+'
-    | 'add'
-    | '-'
-    | '*'
-    | '/'
-    | 'bor'
-    | 'band'
-    | 'bsl'
-    | 'bsr'
+    'add'
+    | 'and'
+    | 'arsh'
+    | 'div'
+    | 'lsh'
+    | 'mod'
+    | 'mov'
+    | 'mul'
     | 'neg'
-    | 'bxor'
-    | 'rem'
-    | '='.
+    | 'or'
+    | 'rsh'
+    | 'sub'
+    | 'xor'.
 
 -type bpf_prog_type() ::
     'unspec'
@@ -288,7 +290,25 @@
     | 'ima_inode_hash'
     | 'sock_from_file'.
 
+-type bpf_src() :: 'k' | 'x'.
+
 -type bpf_size() :: 'b' | 'h' | 'w' | 'dw'.
+
+-type bpf_jmp_op() ::
+    'a'
+    | 'eq'
+    | 'gt'
+    | 'ge'
+    | 'set'
+    | 'ne'
+    | 'lt'
+    | 'le'
+    | 'sgt'
+    | 'sge'
+    | 'slt'
+    | 'sle'
+    | 'call'
+    | 'exit'.
 
 -type bpf_opcode() :: {atom(), atom(), atom()}.
 -type bpf_reg() :: 0..10.

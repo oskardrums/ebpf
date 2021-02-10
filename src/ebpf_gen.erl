@@ -2,7 +2,7 @@
 %%% @author Oskar Mazerath <moskar.drummer@gmail.com>
 %%% @copyright (C) 2021, Oskar Mazerath
 %%% @doc
-%%%
+%%% Library module containing eBPF intructions generation methods.
 %%% @end
 %%% Created :  9 Feb 2021 by Oskar Mazerath <moskar.drummer@gmail.com>
 %%%-------------------------------------------------------------------
@@ -37,6 +37,12 @@
 %%% API
 %%%===================================================================
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates an eBPF instruction that performs ALU operation Op with
+%% register arguments Src and Dst, and store the result in Dst.
+%% @end
+%%--------------------------------------------------------------------
 -spec alu64_reg(bpf_alu_op(), bpf_reg(), bpf_reg()) -> bpf_instruction().
 alu64_reg(Op, Dst, Src) ->
     #bpf_instruction{
@@ -45,6 +51,13 @@ alu64_reg(Op, Dst, Src) ->
         src_reg = Src
     }.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates an eBPF instruction that performs ALU operation Op with
+%% register arguments Src and Dst using only the lower 32 bits of
+%% each, and store the result in Dst.
+%% @end
+%%--------------------------------------------------------------------
 -spec alu32_reg(bpf_alu_op(), bpf_reg(), bpf_reg()) -> bpf_instruction().
 alu32_reg(Op, Dst, Src) ->
     #bpf_instruction{
@@ -53,6 +66,12 @@ alu32_reg(Op, Dst, Src) ->
         src_reg = Src
     }.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates an eBPF instruction that performs ALU operation Op with
+%% immediate argument Imm and register Dst, and store the result in Dst.
+%% @end
+%%--------------------------------------------------------------------
 -spec alu64_imm(bpf_alu_op(), bpf_reg(), bpf_imm()) -> bpf_instruction().
 alu64_imm(Op, Dst, Imm) ->
     #bpf_instruction{
@@ -61,6 +80,13 @@ alu64_imm(Op, Dst, Imm) ->
         imm = Imm
     }.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates an eBPF instruction that performs ALU operation Op with
+%% immediate argument Imm and register Dst using only the lower 32
+%% bits of each, and store the result in Dst.
+%% @end
+%%--------------------------------------------------------------------
 -spec alu32_imm(bpf_alu_op(), bpf_reg(), bpf_imm()) -> bpf_instruction().
 alu32_imm(Op, Dst, Imm) ->
     #bpf_instruction{
@@ -69,30 +95,69 @@ alu32_imm(Op, Dst, Imm) ->
         imm = Imm
     }.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates an eBPF instruction that copies Src into Dst.
+%% @end
+%%--------------------------------------------------------------------
 -spec mov64_reg(bpf_reg(), bpf_reg()) -> bpf_instruction().
 mov64_reg(Dst, Src) ->
     #bpf_instruction{code = {alu64, x, mov}, dst_reg = Dst, src_reg = Src}.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates an eBPF instruction that copies the lower 32 bits of Src
+%% into Dst, zeroing the upper 32 bits of Dst in the process.
+%% @end
+%%--------------------------------------------------------------------
 -spec mov32_reg(bpf_reg(), bpf_reg()) -> bpf_instruction().
 mov32_reg(Dst, Src) ->
     #bpf_instruction{code = {alu32, x, mov}, dst_reg = Dst, src_reg = Src}.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates an eBPF instruction that copies Imm into Dst.
+%% @end
+%%--------------------------------------------------------------------
 -spec mov64_imm(bpf_reg(), bpf_imm()) -> bpf_instruction().
 mov64_imm(Dst, Imm) ->
     #bpf_instruction{code = {alu64, k, mov}, dst_reg = Dst, imm = Imm}.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates an eBPF instruction that copies Imm into the
+%% lower 32 bits of Dst, zeroing the 32 upper bits.
+%% @end
+%%--------------------------------------------------------------------
 -spec mov32_imm(bpf_reg(), bpf_imm()) -> bpf_instruction().
 mov32_imm(Dst, Imm) ->
     #bpf_instruction{code = {alu32, k, mov}, dst_reg = Dst, imm = Imm}.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates an eBPF instruction that calls an eBPF helper function.
+%% @end
+%%--------------------------------------------------------------------
 -spec emit_call(bpf_helper()) -> bpf_instruction().
 emit_call(Func) ->
     #bpf_instruction{code = {jmp64, k, call}, imm = bpf_helper_to_int(Func)}.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates an eBPF instruction that returns from the
+%% current function.
+%% @end
+%%--------------------------------------------------------------------
 -spec exit_insn() -> bpf_instruction().
 exit_insn() ->
     #bpf_instruction{code = {jmp64, k, exit}}.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates an eBPF instruction that stores Imm in the memory
+%% location pointed by Dst's value plus Off.
+%% @end
+%%--------------------------------------------------------------------
 -spec st_mem(bpf_size(), bpf_reg(), bpf_off(), bpf_imm()) -> bpf_instruction().
 st_mem(Size, Dst, Off, Imm) ->
     #bpf_instruction{
@@ -102,6 +167,12 @@ st_mem(Size, Dst, Off, Imm) ->
         imm = Imm
     }.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates an eBPF instruction that stores the value of Src in the
+%% memory location pointed by Dst's value plus Off.
+%% @end
+%%--------------------------------------------------------------------
 -spec stx_mem(bpf_size(), bpf_reg(), bpf_reg(), bpf_off()) -> bpf_instruction().
 stx_mem(Size, Dst, Src, Off) ->
     #bpf_instruction{
@@ -111,10 +182,23 @@ stx_mem(Size, Dst, Src, Off) ->
         off = Off
     }.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Same as stack_printk/2, with StackHead set to 0.
+%% @end
+%%--------------------------------------------------------------------
 -spec stack_printk(string()) -> [bpf_instruction()].
 stack_printk(String) ->
     stack_printk(String, 0).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates a sequence of eBPF instructions that stores a string on
+%% the eBPF stack and prints it with the trace_printk helper function.
+%% The stack is overwritten from
+%% StackHead-byte_size(String) to StackHead.
+%% @end
+%%--------------------------------------------------------------------
 -spec stack_printk(string(), integer()) -> [bpf_instruction()].
 stack_printk(String, StackHead) ->
     {Instructions0, NewStackHead} = push_string(String, StackHead),
@@ -128,18 +212,40 @@ stack_printk(String, StackHead) ->
             ],
     Instructions.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Same as push_string/2, with StackHead set to 0.
+%% @end
+%%--------------------------------------------------------------------
 -spec push_string(string()) -> {[bpf_instruction()], integer()}.
 push_string(String) ->
     push_string(String, 0).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates a sequence of eBPF instructions that stores a string on
+%% the eBPF stack from offset StackHead-size(String) to StackHead.
+%% @end
+%%--------------------------------------------------------------------
 -spec push_string(string(), integer()) -> {[bpf_instruction()], integer()}.
 push_string(String, StackHead) ->
     push_binary(list_to_binary(String), StackHead).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Same as push_binary/2, with StackHead set to 0.
+%% @end
+%%--------------------------------------------------------------------
 -spec push_binary(binary()) -> {[bpf_instruction()], integer()}.
 push_binary(Bin) ->
     push_binary(Bin, 0).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates a sequence of eBPF instructions that stores a binary on
+%% the eBPF stack from offset StackHead-size(String) to StackHead.
+%% @end
+%%--------------------------------------------------------------------
 -spec push_binary(binary(), integer()) -> {[bpf_instruction()], integer()}.
 push_binary(Bin, Head) ->
     Size = byte_size(Bin),
@@ -149,6 +255,18 @@ push_binary(Bin, Head) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+-spec store_buffer(binary(), integer()) -> [bpf_instruction()].
+store_buffer(Bin, Off) ->
+    store_buffer(Bin, Off, []).
+
+-spec store_buffer(binary(), integer(), [bpf_instruction()]) -> [bpf_instruction()].
+store_buffer(<<Imm:32/big-signed-integer, Bin/binary>>, Off, Acc) ->
+    store_buffer(Bin, Off + 4, [st_mem(w, 10, Off, Imm) | Acc]);
+store_buffer(<<>>, _Off, Acc) ->
+    Acc;
+store_buffer(BinImm, Off, Acc) ->
+    store_buffer(<<BinImm/binary, 0:(32 - bit_size(BinImm))>>, Off, Acc).
 
 -spec bpf_helper_to_int(bpf_helper()) -> bpf_imm().
 bpf_helper_to_int(unspec) -> 0;
@@ -314,15 +432,3 @@ bpf_helper_to_int(bprm_opts_set) -> 159;
 bpf_helper_to_int(ktime_get_coarse_ns) -> 160;
 bpf_helper_to_int(ima_inode_hash) -> 161;
 bpf_helper_to_int(sock_from_file) -> 162.
-
--spec store_buffer(binary(), integer()) -> [bpf_instruction()].
-store_buffer(Bin, Off) ->
-    store_buffer(Bin, Off, []).
-
--spec store_buffer(binary(), integer(), [bpf_instruction()]) -> [bpf_instruction()].
-store_buffer(<<Imm:32/big-signed-integer, Bin/binary>>, Off, Acc) ->
-    store_buffer(Bin, Off + 4, [st_mem(w, 10, Off, Imm) | Acc]);
-store_buffer(<<>>, _Off, Acc) ->
-    Acc;
-store_buffer(BinImm, Off, Acc) ->
-    store_buffer(<<BinImm/binary, 0:(32 - bit_size(BinImm))>>, Off, Acc).
