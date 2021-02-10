@@ -1,6 +1,6 @@
 ebpf
 =====
-![Erlang CI](https://github.com/oskardrums/ebpf/workflows/.github/workflows/erlang.yml/badge.svg)
+![Erlang CI](https://github.com/oskardrums/ebpf/workflows/Erlang%20CI/badge.svg)
 
 Erlang eBPF library
 
