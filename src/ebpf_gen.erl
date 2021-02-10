@@ -23,7 +23,6 @@
     stx_mem/4,
     emit_call/1,
     bpf_helper_to_int/1,
-    bpf_alu_op_to_int/1,
     stack_printk/1,
     stack_printk/2,
     push_binary/1,
@@ -41,7 +40,7 @@
 -spec alu64_reg(bpf_alu_op(), bpf_reg(), bpf_reg()) -> bpf_instruction().
 alu64_reg(Op, Dst, Src) ->
     #bpf_instruction{
-        code = ?BPF_ALU64 bor bpf_alu_op_to_int(Op) bor ?BPF_X,
+        code = {alu64, x, Op},
         dst_reg = Dst,
         src_reg = Src
     }.
@@ -49,7 +48,7 @@ alu64_reg(Op, Dst, Src) ->
 -spec alu32_reg(bpf_alu_op(), bpf_reg(), bpf_reg()) -> bpf_instruction().
 alu32_reg(Op, Dst, Src) ->
     #bpf_instruction{
-        code = ?BPF_ALU bor bpf_alu_op_to_int(Op) bor ?BPF_X,
+        code = {alu32, x, Op},
         dst_reg = Dst,
         src_reg = Src
     }.
@@ -57,7 +56,7 @@ alu32_reg(Op, Dst, Src) ->
 -spec alu64_imm(bpf_alu_op(), bpf_reg(), bpf_imm()) -> bpf_instruction().
 alu64_imm(Op, Dst, Imm) ->
     #bpf_instruction{
-        code = ?BPF_ALU64 bor bpf_alu_op_to_int(Op) bor ?BPF_K,
+        code = {alu64, k, Op},
         dst_reg = Dst,
         imm = Imm
     }.
@@ -65,39 +64,39 @@ alu64_imm(Op, Dst, Imm) ->
 -spec alu32_imm(bpf_alu_op(), bpf_reg(), bpf_imm()) -> bpf_instruction().
 alu32_imm(Op, Dst, Imm) ->
     #bpf_instruction{
-        code = ?BPF_ALU bor bpf_alu_op_to_int(Op) bor ?BPF_K,
+        code = {alu32, k, Op},
         dst_reg = Dst,
         imm = Imm
     }.
 
 -spec mov64_reg(bpf_reg(), bpf_reg()) -> bpf_instruction().
 mov64_reg(Dst, Src) ->
-    #bpf_instruction{code = ?BPF_ALU64 bor ?BPF_MOV bor ?BPF_X, dst_reg = Dst, src_reg = Src}.
+    #bpf_instruction{code = {alu64, x, mov}, dst_reg = Dst, src_reg = Src}.
 
 -spec mov32_reg(bpf_reg(), bpf_reg()) -> bpf_instruction().
 mov32_reg(Dst, Src) ->
-    #bpf_instruction{code = ?BPF_ALU bor ?BPF_MOV bor ?BPF_X, dst_reg = Dst, src_reg = Src}.
+    #bpf_instruction{code = {alu32, x, mov}, dst_reg = Dst, src_reg = Src}.
 
 -spec mov64_imm(bpf_reg(), bpf_imm()) -> bpf_instruction().
 mov64_imm(Dst, Imm) ->
-    #bpf_instruction{code = ?BPF_ALU64 bor ?BPF_MOV bor ?BPF_K, dst_reg = Dst, imm = Imm}.
+    #bpf_instruction{code = {alu64, k, mov}, dst_reg = Dst, imm = Imm}.
 
 -spec mov32_imm(bpf_reg(), bpf_imm()) -> bpf_instruction().
 mov32_imm(Dst, Imm) ->
-    #bpf_instruction{code = ?BPF_ALU bor ?BPF_MOV bor ?BPF_K, dst_reg = Dst, imm = Imm}.
+    #bpf_instruction{code = {alu32, k, mov}, dst_reg = Dst, imm = Imm}.
 
 -spec emit_call(bpf_helper()) -> bpf_instruction().
 emit_call(Func) ->
-    #bpf_instruction{code = ?BPF_JMP bor ?BPF_CALL, imm = bpf_helper_to_int(Func)}.
+    #bpf_instruction{code = {jmp64, k, call}, imm = bpf_helper_to_int(Func)}.
 
 -spec exit_insn() -> bpf_instruction().
 exit_insn() ->
-    #bpf_instruction{code = ?BPF_JMP bor ?BPF_EXIT}.
+    #bpf_instruction{code = {jmp64, k, exit}}.
 
 -spec st_mem(bpf_size(), bpf_reg(), bpf_off(), bpf_imm()) -> bpf_instruction().
 st_mem(Size, Dst, Off, Imm) ->
     #bpf_instruction{
-        code = ?BPF_ST bor bpf_size_to_int(Size) bor ?BPF_MEM,
+        code = {st, Size, mem},
         dst_reg = Dst,
         off = Off,
         imm = Imm
@@ -106,7 +105,7 @@ st_mem(Size, Dst, Off, Imm) ->
 -spec stx_mem(bpf_size(), bpf_reg(), bpf_reg(), bpf_off()) -> bpf_instruction().
 stx_mem(Size, Dst, Src, Off) ->
     #bpf_instruction{
-        code = ?BPF_STX bor bpf_size_to_int(Size) bor ?BPF_MEM,
+        code = {stx, Size, mem},
         dst_reg = Dst,
         src_reg = Src,
         off = Off
@@ -150,12 +149,6 @@ push_binary(Bin, Head) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
--spec bpf_size_to_int(bpf_size()) -> non_neg_integer().
-bpf_size_to_int(8) -> ?BPF_B;
-bpf_size_to_int(16) -> ?BPF_H;
-bpf_size_to_int(32) -> ?BPF_W;
-bpf_size_to_int(64) -> ?BPF_DW.
 
 -spec bpf_helper_to_int(bpf_helper()) -> bpf_imm().
 bpf_helper_to_int(unspec) -> 0;
@@ -322,28 +315,13 @@ bpf_helper_to_int(ktime_get_coarse_ns) -> 160;
 bpf_helper_to_int(ima_inode_hash) -> 161;
 bpf_helper_to_int(sock_from_file) -> 162.
 
--spec bpf_alu_op_to_int(bpf_alu_op()) -> bpf_opcode().
-bpf_alu_op_to_int('+') -> ?BPF_ADD;
-bpf_alu_op_to_int('add') -> ?BPF_ADD;
-bpf_alu_op_to_int('-') -> ?BPF_SUB;
-bpf_alu_op_to_int('*') -> ?BPF_MUL;
-bpf_alu_op_to_int('/') -> ?BPF_DIV;
-bpf_alu_op_to_int('bor') -> ?BPF_OR;
-bpf_alu_op_to_int('band') -> ?BPF_AND;
-bpf_alu_op_to_int('bsl') -> ?BPF_LSH;
-bpf_alu_op_to_int('bsr') -> ?BPF_RSH;
-bpf_alu_op_to_int('neg') -> ?BPF_NEG;
-bpf_alu_op_to_int('bxor') -> ?BPF_XOR;
-bpf_alu_op_to_int('rem') -> ?BPF_MOD;
-bpf_alu_op_to_int('=') -> ?BPF_MOV.
-
 -spec store_buffer(binary(), integer()) -> [bpf_instruction()].
 store_buffer(Bin, Off) ->
     store_buffer(Bin, Off, []).
 
 -spec store_buffer(binary(), integer(), [bpf_instruction()]) -> [bpf_instruction()].
 store_buffer(<<Imm:32/big-signed-integer, Bin/binary>>, Off, Acc) ->
-    store_buffer(Bin, Off + 4, [st_mem(32, 10, Off, Imm) | Acc]);
+    store_buffer(Bin, Off + 4, [st_mem(w, 10, Off, Imm) | Acc]);
 store_buffer(<<>>, _Off, Acc) ->
     Acc;
 store_buffer(BinImm, Off, Acc) ->

@@ -16,6 +16,7 @@
 -define(BPF_H, 16#08).
 -define(BPF_B, 16#10).
 -define(BPF_DW, 16#18).
+
 -define(BPF_MODE(Code), Code band 16#e0).
 -define(BPF_IMM, 16#00).
 -define(BPF_ABS, 16#20).
@@ -24,8 +25,7 @@
 -define(BPF_LEN, 16#80).
 -define(BPF_MSH, 16#a0).
 -define(BPF_XADD, 16#c0).
--define(BPF_MOV, 16#b0).
--define(BPF_ARSH, 16#c0).
+
 %% alu/jmp fields
 -define(BPF_OP(Code), Code band 16#f0).
 -define(BPF_ADD, 16#00).
@@ -39,6 +39,8 @@
 -define(BPF_NEG, 16#80).
 -define(BPF_MOD, 16#90).
 -define(BPF_XOR, 16#a0).
+-define(BPF_MOV, 16#b0).
+-define(BPF_ARSH, 16#c0).
 -define(BPF_JA, 16#00).
 -define(BPF_JEQ, 16#10).
 -define(BPF_JGT, 16#20).
@@ -286,10 +288,10 @@
     | 'ima_inode_hash'
     | 'sock_from_file'.
 
--type bpf_size() :: non_neg_integer().
+-type bpf_size() :: 'b' | 'h' | 'w' | 'dw'.
 
--type bpf_opcode() :: 0..255.
--type bpf_reg() :: 0..127.
+-type bpf_opcode() :: {atom(), atom(), atom()}.
+-type bpf_reg() :: 0..10.
 -type bpf_off() :: -(1 bsl 15)..1 bsl 15.
 -type bpf_imm() :: -(1 bsl 31)..1 bsl 31.
 
