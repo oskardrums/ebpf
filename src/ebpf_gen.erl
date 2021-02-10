@@ -324,6 +324,7 @@ bpf_helper_to_int(sock_from_file) -> 162.
 
 -spec bpf_alu_op_to_int(bpf_alu_op()) -> bpf_opcode().
 bpf_alu_op_to_int('+') -> ?BPF_ADD;
+bpf_alu_op_to_int('add') -> ?BPF_ADD;
 bpf_alu_op_to_int('-') -> ?BPF_SUB;
 bpf_alu_op_to_int('*') -> ?BPF_MUL;
 bpf_alu_op_to_int('/') -> ?BPF_DIV;
