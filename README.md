@@ -1,12 +1,25 @@
 ebpf
 =====
+![Erlang CI](https://github.com/oskardrums/ebpf/workflows/Erlang%20CI/badge.svg)
 
 Erlang eBPF library
+
+Status
+------
+
+`ebpf` facilitates basic interaction with the Linux eBPF system from Erlang.
+Two modules are currently included:
+* `ebpf_lib` contains NIFs that wrap Linux native API to eBPF, ultimately calling the `bpf(2)` syscall
+* `ebpf_gen` contains functions that generate eBPF instructions according to different parameters
 
 Build
 -----
 
     $ rebar3 compile
+    
+Test
+----
+    $ rebar3 do ct, proper
 
 Usage
 -----
