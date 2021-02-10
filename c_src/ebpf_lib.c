@@ -3,6 +3,7 @@
 #include <bpf/libbpf.h>
 #include <errno.h>
 #include <sys/socket.h>
+#include <string.h>
 
 /* copied from otp/erts/emulator/beam/erl_posix_str.c */
 char *
@@ -694,43 +695,106 @@ ebpf_load_program(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ERL_NIF_TERM
-ebpf_verify_program(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+ebpf__verify_program(ErlNifEnv* env, int type, ErlNifBinary * bin, char * buf, size_t buf_size, uint32_t kernel_version, const char * license)
 {
-  ErlNifBinary binary_intructions = {0,};
-  char buf[4096] = {0,};
   int res = -1;
-  int prog_type = 0;
- 
-  if(argc != 2)
+  int log_level = 1;
+
+  if (buf == NULL)
+    {
+      buf_size = 0;
+      log_level = 0;
+    }
+
+  res = bpf_verify_program(type,
+			   (const struct bpf_insn *) bin->data,
+			   bin->size / 8,
+			   0,
+			   license,
+			   kernel_version,
+			   buf,
+			   buf_size,
+			   log_level);
+  if (res < 0)
+    {
+      if (errno == EACCES || errno == EINVAL)
+	{
+	  return enif_make_tuple3(env,
+				  mk_atom(env, "error"),
+				  mk_atom(env, erl_errno_id(errno)),
+				  enif_make_string(env, buf, ERL_NIF_LATIN1));
+	}
+      else
+	{
+	  return mk_error(env, erl_errno_id(errno));
+	}
+    }
+  else
+    {
+      return enif_make_tuple2(env, mk_atom(env, "ok"), enif_make_string(env, buf, ERL_NIF_LATIN1));
+    }
+}
+
+static ERL_NIF_TERM
+ebpf_verify_program5(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  int type = 0;
+  ErlNifBinary bin = {0,};
+  char * buf = NULL;
+  uint32_t buf_size = 0;
+  uint32_t kernel_version = 0;
+  char license[256] = {0,};
+
+  ERL_NIF_TERM res = {0,};
+
+  if(argc != 5)
     {
       return enif_make_badarg(env);
     }
 
-  if(!enif_get_int(env, argv[0], &prog_type))
+  if(!enif_get_int(env, argv[0], &type))
     {
-      return mk_error(env, "bad_prog_type");
+      return enif_make_badarg(env);
     }
 
 
-  if(!enif_inspect_binary(env, argv[1], &binary_intructions))
+  if(!enif_inspect_binary(env, argv[1], &bin))
     {
-      return mk_error(env, "not_a_binary");
+      return enif_make_badarg(env);
     }
 
-  res = bpf_verify_program(prog_type,
-			   (const struct bpf_insn *) binary_intructions.data,
-			   binary_intructions.size / 8,
-			   0,
-			   "GPL",
-			   0,
-			   buf,
-			   sizeof(buf),
-			   1);
-  if (res < 0) {
-    return enif_make_tuple2(env, mk_atom(env, "error"), enif_make_string(env, buf, ERL_NIF_LATIN1));
-  }
+  if(!enif_get_uint(env, argv[2], &buf_size))
+    {
+      return enif_make_badarg(env);
+    }
 
-  return mk_atom(env, "ok");
+  if(!enif_get_uint(env, argv[3], &kernel_version))
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(enif_get_string(env, argv[4], license, sizeof(license), ERL_NIF_LATIN1) <= 0)
+    {
+      return enif_make_badarg(env);
+    }
+  
+  buf = (char *) malloc (buf_size);
+
+  if(buf == NULL)
+    {
+      return mk_error(env, erl_errno_id(errno));
+    }
+
+  memset(buf, 0, buf_size);
+
+  res = ebpf__verify_program(env, type, &bin, buf, buf_size, kernel_version, license);
+
+  if (buf)
+    {
+      free(buf);
+    }
+
+  return res;
 }
 
 static ERL_NIF_TERM
@@ -768,7 +832,7 @@ static ErlNifFunc nif_funcs[] = {
 				 {"bpf_load_program", 2, ebpf_load_program},
 				 {"bpf_attach_socket_filter", 2, ebpf_attach_socket_filter},
 				 {"bpf_attach_xdp", 2, ebpf_attach_xdp},
-				 {"bpf_verify_program", 2, ebpf_verify_program}
+				 {"bpf_verify_program", 5, ebpf_verify_program5}
 };
 
 ERL_NIF_INIT(ebpf_lib, nif_funcs, NULL, NULL, NULL, NULL);
