@@ -66,7 +66,10 @@ disassemble(<<InstructionBin:8/binary-unit:8, More/binary>>, Acc) ->
 verify(BpfProgramType, BpfProgramBin) ->
     bpf_verify_program(
         bpf_prog_type_to_int(BpfProgramType),
-        BpfProgramBin
+        BpfProgramBin,
+        4096,
+        0,
+        "GPL"
     ).
 
 %%--------------------------------------------------------------------
@@ -115,8 +118,14 @@ attach_xdp(IfName, ProgFd) when is_list(IfName) ->
 %%% NIFs and NIF related functions
 %%%-------------------------------------------------------------------
 
--spec bpf_verify_program(non_neg_integer(), binary()) -> 'ok' | {'error', term()}.
-bpf_verify_program(_BpfProgramType, _BpfProgramBin) ->
+-spec bpf_verify_program(
+    non_neg_integer(),
+    binary(),
+    non_neg_integer(),
+    non_neg_integer(),
+    string()
+) -> 'ok' | {'error', atom()} | {'error', atom(), string()}.
+bpf_verify_program(_BpfProgramType, _BpfProgramBin, _LogBufferSize, _KernelVersion, _License) ->
     not_loaded(?LINE).
 
 -spec bpf_load_program(non_neg_integer(), binary()) ->
