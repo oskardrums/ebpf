@@ -1,6 +1,5 @@
 #include "erl_nif.h"
-#include <bpf/bpf.h>
-#include <bpf/libbpf.h>
+#include "bpf.h"
 #include <errno.h>
 #include <sys/socket.h>
 #include <string.h>
@@ -829,10 +828,10 @@ ebpf_attach_socket_filter(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 
 static ErlNifFunc nif_funcs[] = {
-				 {"bpf_load_program", 2, ebpf_load_program},
-				 {"bpf_attach_socket_filter", 2, ebpf_attach_socket_filter},
-				 {"bpf_attach_xdp", 2, ebpf_attach_xdp},
-				 {"bpf_verify_program", 5, ebpf_verify_program5}
+				 {"bpf_load_program", 2, ebpf_load_program, 0},
+				 {"bpf_attach_socket_filter", 2, ebpf_attach_socket_filter, 0},
+				 {"bpf_attach_xdp", 2, ebpf_attach_xdp, 0},
+				 {"bpf_verify_program", 5, ebpf_verify_program5, 0}
 };
 
 ERL_NIF_INIT(ebpf_lib, nif_funcs, NULL, NULL, NULL, NULL);
