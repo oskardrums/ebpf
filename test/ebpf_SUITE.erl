@@ -4,9 +4,9 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 10 Feb 2021 by Oskar Mazerath <moskar.drummer@gmail.com>
+%%% Created : 11 Feb 2021 by Oskar Mazerath <moskar.drummer@gmail.com>
 %%%-------------------------------------------------------------------
--module(ebpf_gen_SUITE).
+-module(ebpf_SUITE).
 
 %% Note: This directive should only be used in test suites.
 -compile(export_all).
@@ -35,7 +35,7 @@
 %% @end
 %%--------------------------------------------------------------------
 suite() ->
-    [{timetrap, {minutes, 10}}].
+    [{timetrap,{minutes,10}}].
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -164,7 +164,10 @@ end_per_testcase(_TestCase, _Config) ->
 %% @end
 %%--------------------------------------------------------------------
 groups() ->
-    [].
+    [
+     {ebpf_gen_ct, [parallel], [alu64_reg_known_good_result_1]},
+     {ebpf_lib_ct, [parallel], [simple_socket_filter_1]}
+    ].
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -183,14 +186,15 @@ groups() ->
 %% @end
 %%--------------------------------------------------------------------
 all() ->
-    [alu64_reg_known_good_result_1].
+    [{group, ebpf_gen_ct}, {group, ebpf_lib_ct}].
+
 
 %%--------------------------------------------------------------------
 %% TEST CASES
 %%--------------------------------------------------------------------
 
 %%--------------------------------------------------------------------
-%% @doc
+%% @doc 
 %%  Test case info function - returns list of tuples to set
 %%  properties for the test case.
 %%
@@ -200,10 +204,11 @@ all() ->
 %% Note: This function is only meant to be used to return a list of
 %% values, not perform any other operations.
 %%
-%% @spec TestCase() -> Info
+%% @spec TestCase() -> Info 
 %% @end
 %%--------------------------------------------------------------------
-alu64_reg_known_good_result_1() -> [].
+simple_socket_filter_1() -> 
+    [].
 
 %%--------------------------------------------------------------------
 %% @doc Test case function. (The name of it must be specified in
@@ -222,6 +227,18 @@ alu64_reg_known_good_result_1() -> [].
 %%           {save_config,Config1} | {skip_and_save,Reason,Config1}
 %% @end
 %%--------------------------------------------------------------------
+simple_socket_filter_1(_Config) -> 
+    {ok, ProgFd} = ebpf_lib:load(socket_filter,
+				 ebpf_lib:assemble([
+						    ebpf_gen:mov64_imm(0,0), % R0 = 0
+						    ebpf_gen:exit_insn()     % return R0
+						   ])),
+    {ok, S} = socket:open(inet, stream, {raw, 0}),
+    {ok, SockFd} = socket:getopt(S, otp, fd),
+    ok = ebpf_lib:attach_socket_filter(SockFd, ProgFd).
+
+
+alu64_reg_known_good_result_1() -> [].
 alu64_reg_known_good_result_1(_Config) ->
     #bpf_instruction{
         code = {alu64, x, add},
