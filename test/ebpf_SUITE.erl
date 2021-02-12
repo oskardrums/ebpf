@@ -35,7 +35,7 @@
 %% @end
 %%--------------------------------------------------------------------
 suite() ->
-    [{timetrap,{minutes,10}}].
+    [{timetrap, {minutes, 10}}].
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -165,8 +165,8 @@ end_per_testcase(_TestCase, _Config) ->
 %%--------------------------------------------------------------------
 groups() ->
     [
-     {ebpf_gen_ct, [parallel], [alu64_reg_known_good_result_1]},
-     {ebpf_lib_ct, [parallel], [simple_socket_filter_1]}
+        {ebpf_gen_ct, [parallel], [alu64_reg_known_good_result_1]},
+        {ebpf_lib_ct, [parallel], [simple_socket_filter_1]}
     ].
 
 %%--------------------------------------------------------------------
@@ -188,13 +188,12 @@ groups() ->
 all() ->
     [{group, ebpf_gen_ct}, {group, ebpf_lib_ct}].
 
-
 %%--------------------------------------------------------------------
 %% TEST CASES
 %%--------------------------------------------------------------------
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Test case info function - returns list of tuples to set
 %%  properties for the test case.
 %%
@@ -204,10 +203,10 @@ all() ->
 %% Note: This function is only meant to be used to return a list of
 %% values, not perform any other operations.
 %%
-%% @spec TestCase() -> Info 
+%% @spec TestCase() -> Info
 %% @end
 %%--------------------------------------------------------------------
-simple_socket_filter_1() -> 
+simple_socket_filter_1() ->
     [].
 
 %%--------------------------------------------------------------------
@@ -227,16 +226,31 @@ simple_socket_filter_1() ->
 %%           {save_config,Config1} | {skip_and_save,Reason,Config1}
 %% @end
 %%--------------------------------------------------------------------
-simple_socket_filter_1(_Config) -> 
-    {ok, ProgFd} = ebpf_lib:load(socket_filter,
-				 ebpf_lib:assemble([
-						    ebpf_gen:mov64_imm(0,0), % R0 = 0
-						    ebpf_gen:exit_insn()     % return R0
-						   ])),
+simple_socket_filter_1(_Config) ->
+    meck:new(ebpf_lib, [passthrough]),
+    meck:expect(
+        ebpf_lib,
+        load,
+        fun(socket_filter, <<183, 0, 0, 0, 0, 0, 0, 0, 149, 0, 0, 0, 0, 0, 0, 0>>) -> {ok, 666} end
+    ),
+    meck:expect(ebpf_lib, attach_socket_filter, fun(_SockFd, 666) -> ok end),
+
+    {ok, ProgFd} = ebpf_lib:load(
+        socket_filter,
+        ebpf_lib:assemble([
+            % R0 = 0
+            ebpf_gen:mov64_imm(0, 0),
+            % return R0
+            ebpf_gen:exit_insn()
+        ])
+    ),
     {ok, S} = socket:open(inet, stream, {raw, 0}),
     {ok, SockFd} = socket:getopt(S, otp, fd),
-    ok = ebpf_lib:attach_socket_filter(SockFd, ProgFd).
 
+    ok = ebpf_lib:attach_socket_filter(SockFd, ProgFd),
+
+    true = meck:validate(ebpf_lib),
+    meck:unload(ebpf_lib).
 
 alu64_reg_known_good_result_1() -> [].
 alu64_reg_known_good_result_1(_Config) ->
