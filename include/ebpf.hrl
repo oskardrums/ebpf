@@ -75,6 +75,10 @@
 -define(BPF_TAX, 16#00).
 -define(BPF_TXA, 16#80).
 
+
+-define(BPF_PSEUDO_MAP_FD, 1).
+-define(BPF_PSEUDO_MAP_VALUE, 2).
+
 -type bpf_ld_mode() :: 'imm' | 'abs' | 'mem' | 'ind' | 'xadd'.
 
 -type bpf_alu_op() ::

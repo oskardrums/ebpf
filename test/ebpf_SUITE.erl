@@ -167,7 +167,8 @@ groups() ->
     [
         {ebpf_gen_ct, [parallel], [
             alu64_reg_known_good_result_1,
-            ld_imm64_raw_full_known_good_result_1
+            ld_imm64_raw_full_known_good_result_1,
+            ld_map_fd_known_good_result_1
         ]},
         {ebpf_lib_ct, [parallel], [simple_socket_filter_1]}
     ].
@@ -291,3 +292,22 @@ ld_imm64_raw_full_known_good_result_1(_Config) ->
         16#beef,
         16#feed
     ).
+
+ld_map_fd_known_good_result_1() -> [].
+ld_map_fd_known_good_result_1(_Config) ->
+    [
+        #bpf_instruction{
+            code = {ld, dw, imm},
+            dst_reg = 1,
+            src_reg = ?BPF_PSEUDO_MAP_FD,
+            off = 0,
+            imm = 17
+        },
+        #bpf_instruction{
+            code = {ld, w, imm},
+            dst_reg = 0,
+            src_reg = 0,
+            off = 0,
+            imm = 0
+        }
+    ] = ebpf_gen:ld_map_fd(1, 17).

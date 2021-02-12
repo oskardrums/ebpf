@@ -20,6 +20,7 @@
     alu32_reg/3,
     alu32_imm/3,
     ld_imm64_raw_full/6,
+    ld_map_fd/2,
     st_mem/4,
     stx_mem/4,
     emit_call/1,
@@ -192,6 +193,16 @@ ld_imm64_raw_full(Dst, Src, Off1, Off2, Imm1, Imm2) ->
             imm = Imm2
         }
     ].
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates a sequence of eBPF instructions that loads the memory
+%% address of an eBPF map given by MapFd into Dst.
+%% @end
+%%--------------------------------------------------------------------
+-spec ld_map_fd(bpf_reg(), bpf_imm()) -> [bpf_instruction()].
+ld_map_fd(Dst, MapFd) ->
+    ld_imm64_raw_full(Dst, ?BPF_PSEUDO_MAP_FD, 0, 0, MapFd, 0).
 
 %%--------------------------------------------------------------------
 %% @doc
