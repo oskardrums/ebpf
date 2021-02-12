@@ -17,6 +17,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Deps
+      run: apt -qq update && apt -y install sudo
     - name: Compile
       run: rebar3 compile
     - name: Build docs
