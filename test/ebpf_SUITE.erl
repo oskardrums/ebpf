@@ -165,7 +165,10 @@ end_per_testcase(_TestCase, _Config) ->
 %%--------------------------------------------------------------------
 groups() ->
     [
-        {ebpf_gen_ct, [parallel], [alu64_reg_known_good_result_1]},
+        {ebpf_gen_ct, [parallel], [
+            alu64_reg_known_good_result_1,
+            ld_imm64_raw_full_known_good_result_1
+        ]},
         {ebpf_lib_ct, [parallel], [simple_socket_filter_1]}
     ].
 
@@ -246,7 +249,6 @@ simple_socket_filter_1(_Config) ->
     ),
     {ok, S} = socket:open(inet, stream, {raw, 0}),
     {ok, SockFd} = socket:getopt(S, otp, fd),
-
     ok = ebpf_lib:attach_socket_filter(SockFd, ProgFd),
 
     true = meck:validate(ebpf_lib),
@@ -262,4 +264,30 @@ alu64_reg_known_good_result_1(_Config) ->
         add,
         1,
         2
+    ).
+
+ld_imm64_raw_full_known_good_result_1() -> [].
+ld_imm64_raw_full_known_good_result_1(_Config) ->
+    [
+        #bpf_instruction{
+            code = {ld, dw, imm},
+            dst_reg = 1,
+            src_reg = 2,
+            off = 1337,
+            imm = 16#beef
+        },
+        #bpf_instruction{
+            code = {ld, w, imm},
+            dst_reg = 0,
+            src_reg = 0,
+            off = 8008,
+            imm = 16#feed
+        }
+    ] = ebpf_gen:ld_imm64_raw_full(
+        1,
+        2,
+        1337,
+        8008,
+        16#beef,
+        16#feed
     ).
