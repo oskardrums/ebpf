@@ -13,7 +13,7 @@ prop_disassemble_assemble_symmetry() ->
         Instructions,
         bpf_sequence(),
         begin
-            Instructions = ebpf_kern:disassemble(ebpf_kern:assemble(Instructions)),
+            Instructions = ebpf_asm:disassemble(ebpf_asm:assemble(Instructions)),
             true
         end
     ).
@@ -23,7 +23,7 @@ prop_assemble_produces_sane_binaries() ->
         Instructions,
         bpf_sequence(),
         begin
-            byte_size(ebpf_kern:assemble(Instructions)) rem 8 == 0
+            byte_size(ebpf_asm:assemble(Instructions)) rem 8 == 0
         end
     ).
 

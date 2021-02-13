@@ -244,7 +244,7 @@ simple_socket_filter_1(_Config) ->
 
     {ok, ProgFd} = ebpf_user:load(
         socket_filter,
-        ebpf_kern:assemble([
+        ebpf_asm:assemble([
             % R0 = 0
             ebpf_kern:mov64_imm(0, 0),
             % return R0
