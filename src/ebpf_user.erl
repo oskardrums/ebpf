@@ -14,6 +14,9 @@
     verify/2,
     verify/3,
     create_map/5,
+    update_map_element/4,
+    lookup_map_element/4,
+    delete_map_element/2,
     attach_socket_filter/2,
     attach_xdp/2,
     close/1
@@ -107,6 +110,53 @@ create_map(Type, KeySize, ValueSize, MaxEntries, Flags) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Sets the value associated with Key in eBPF map Map to Value.
+%% @end
+%%--------------------------------------------------------------------
+-spec update_map_element(
+    bpf_map(),
+    binary(),
+    binary(),
+    non_neg_integer()
+) -> 'ok' | {'error', atom()}.
+update_map_element(Map, Key, Value, Flags) ->
+    bpf_update_map_element(
+        Map,
+        Key,
+        Value,
+        Flags
+    ).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Retrieves the value associated with Key in eBPF map Map.
+%% @end
+%%--------------------------------------------------------------------
+-spec lookup_map_element(
+    bpf_map(),
+    binary(),
+    non_neg_integer(),
+    non_neg_integer()
+) -> {'ok', binary()} | {'error', atom()}.
+lookup_map_element(Map, Key, ValueSize, Flags) ->
+    bpf_lookup_map_element(
+        Map,
+        Key,
+        ValueSize,
+        Flags
+    ).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Deletes the value associated with Key in eBPF map Map.
+%% @end
+%%--------------------------------------------------------------------
+-spec delete_map_element(bpf_map(), binary()) -> 'ok' | {'error', atom()}.
+delete_map_element(Map, Key) ->
+    bpf_delete_map_element(Map, Key).
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Applies a loaded eBPF program as returned by load/1 to a socket.
 %% @end
 %%--------------------------------------------------------------------
@@ -173,6 +223,20 @@ bpf_attach_xdp(_IfIndex, _ProgFd) ->
 -spec bpf_create_map(non_neg_integer(), integer(), integer(), integer(), non_neg_integer()) ->
     {'ok', non_neg_integer()} | {'error', atom()}.
 bpf_create_map(_Type, _KeySize, _ValueSize, _MaxEntries, _Flags) ->
+    not_loaded(?LINE).
+
+-spec bpf_update_map_element(bpf_map(), binary(), binary(), non_neg_integer()) ->
+    'ok' | {'error', atom()}.
+bpf_update_map_element(_Map, _Key, _Value, _Flags) ->
+    not_loaded(?LINE).
+
+-spec bpf_lookup_map_element(bpf_map(), binary(), non_neg_integer(), non_neg_integer()) ->
+    {'ok', binary()} | {'error', atom()}.
+bpf_lookup_map_element(_Map, _Key, _ValueSize, _Flags) ->
+    not_loaded(?LINE).
+
+-spec bpf_delete_map_element(bpf_map(), binary()) -> 'ok' | {'error', atom()}.
+bpf_delete_map_element(_Map, _Key) ->
     not_loaded(?LINE).
 
 -spec bpf_close(integer()) -> {'ok'} | {'error', atom()}.
