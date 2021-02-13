@@ -30,6 +30,9 @@
   Creates a new eBPF map.</td></tr>
 <tr><td valign="top"><a href="#delete_map_element-2">delete_map_element/2</a></td><td>
   Deletes the value associated with Key in eBPF map Map.</td></tr>
+<tr><td valign="top"><a href="#get_map_next_key-2">get_map_next_key/2</a></td><td>
+  Retries the next key after Key in the eBPF map Map, or the first
+  key if Key is not in Map.</td></tr>
 <tr><td valign="top"><a href="#load-2">load/2</a></td><td>
   Attempts to load an eBPF program in binary form to the kernel.</td></tr>
 <tr><td valign="top"><a href="#lookup_map_element-4">lookup_map_element/4</a></td><td>
@@ -80,6 +83,14 @@ Verifies an eBPF program in binary form with the kernel's verifier.</td></tr>
 <p> </p>
 </div><p>
   Deletes the value associated with Key in eBPF map Map.</p>
+
+<h3 class="function"><a name="get_map_next_key-2">get_map_next_key/2</a></h3>
+<div class="spec">
+<p><tt>get_map_next_key(Map::<a href="#type-bpf_map">bpf_map()</a>, Key::binary()) -&gt; {ok, binary()} | {error, atom()}</tt><br></p>
+<p> </p>
+</div><p>
+  Retries the next key after Key in the eBPF map Map, or the first
+  key if Key is not in Map.</p>
 
 <h3 class="function"><a name="load-2">load/2</a></h3>
 <div class="spec">
