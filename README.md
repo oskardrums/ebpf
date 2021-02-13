@@ -9,8 +9,8 @@ Status
 
 `ebpf` facilitates basic interaction with the Linux eBPF system from Erlang.
 Two modules are currently included:
-* `ebpf_lib` contains NIFs that wrap Linux native API to eBPF, ultimately calling the `bpf(2)` syscall
-* `ebpf_gen` contains functions that generate eBPF instructions according to different parameters
+* `ebpf_user` contains NIFs that wrap the Linux native API to eBPF, ultimately calling the `bpf(2)` syscall
+* `ebpf_kern` contains functions that generate eBPF instructions according to different parameters
 
 Build
 -----
@@ -24,12 +24,12 @@ Test
 Usage
 -----
 ```erlang
-{ok, ProgFd} = ebpf_lib:load(socket_filter,
-                             ebpf_lib:assemble([
-                                 ebpf_gen:mov64_imm(0,0), % R0 = 0
-                                 ebpf_gen:exit_insn()     % return R0
+{ok, ProgFd} = ebpf_user:load(socket_filter,
+                             ebpf_kern:assemble([
+                                 ebpf_kern:mov64_imm(0,0), % R0 = 0
+                                 ebpf_kern:exit_insn()     % return R0
                              ])),
 {ok, S} = socket:open(inet, stream, {raw, 0}),
 {ok, SockFd} = socket:getopt(S, otp, fd),
-ok = ebpf_lib:attach_socket_filter(SockFd, ProgFd).
+ok = ebpf_user:attach_socket_filter(SockFd, ProgFd).
 ```

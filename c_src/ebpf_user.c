@@ -898,4 +898,4 @@ static ErlNifFunc nif_funcs[] = {
 				 {"bpf_close", 1, ebpf_close1, 0}
 };
 
-ERL_NIF_INIT(ebpf_lib, nif_funcs, NULL, NULL, NULL, NULL);
+ERL_NIF_INIT(ebpf_user, nif_funcs, NULL, NULL, NULL, NULL);

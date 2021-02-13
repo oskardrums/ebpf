@@ -1,7 +1,8 @@
 -module(prop_ebpf).
 
 -include_lib("proper/include/proper.hrl").
--include("ebpf.hrl").
+-include("ebpf_kern.hrl").
+-include("ebpf_user.hrl").
 
 %%%%%%%%%%%%%%%%%%
 %%% Properties %%%
@@ -12,7 +13,7 @@ prop_disassemble_assemble_symmetry() ->
         Instructions,
         bpf_sequence(),
         begin
-            Instructions = ebpf_lib:disassemble(ebpf_lib:assemble(Instructions)),
+            Instructions = ebpf_kern:disassemble(ebpf_kern:assemble(Instructions)),
             true
         end
     ).
@@ -22,7 +23,7 @@ prop_assemble_produces_sane_binaries() ->
         Instructions,
         bpf_sequence(),
         begin
-            byte_size(ebpf_lib:assemble(Instructions)) rem 8 == 0
+            byte_size(ebpf_kern:assemble(Instructions)) rem 8 == 0
         end
     ).
 
