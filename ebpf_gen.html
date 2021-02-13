@@ -39,6 +39,16 @@
 <tr><td valign="top"><a href="#exit_insn-0">exit_insn/0</a></td><td>
   Generates an eBPF instruction that returns from the
   current function.</td></tr>
+<tr><td valign="top"><a href="#jmp32_imm-4">jmp32_imm/4</a></td><td>
+  <code>if ((Imm bsr 32) Op (Dst bsr 32)) skip Off instructions</code></td></tr>
+<tr><td valign="top"><a href="#jmp32_reg-4">jmp32_reg/4</a></td><td>
+  <code>if ((Src bsr 32) Op (Dst bsr 32)) skip Off instructions</code></td></tr>
+<tr><td valign="top"><a href="#jmp64_imm-4">jmp64_imm/4</a></td><td>
+  <code>if (Imm Op Dst) skip Off instructions</code></td></tr>
+<tr><td valign="top"><a href="#jmp64_reg-4">jmp64_reg/4</a></td><td>
+  <code>if (Src Op Dst) skip Off instructions</code></td></tr>
+<tr><td valign="top"><a href="#jmp_a-1">jmp_a/1</a></td><td>
+  <code>skip Off instructions</code></td></tr>
 <tr><td valign="top"><a href="#ld_imm64_raw_full-6">ld_imm64_raw_full/6</a></td><td>
   Generates a sequence of eBPF instructions that loads a 64 bit
   immediate value computed from (Imm1 bsl 32) bor Imm2 into Dst.</td></tr>
@@ -134,6 +144,41 @@
 </div><p>
   Generates an eBPF instruction that returns from the
   current function.</p>
+
+<h3 class="function"><a name="jmp32_imm-4">jmp32_imm/4</a></h3>
+<div class="spec">
+<p><tt>jmp32_imm(Op::<a href="#type-bpf_jmp_op">bpf_jmp_op()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Imm::<a href="#type-bpf_imm">bpf_imm()</a>, Off::<a href="#type-bpf_off">bpf_off()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
+<p> </p>
+</div><p>
+  <code>if ((Imm bsr 32) Op (Dst bsr 32)) skip Off instructions</code></p>
+
+<h3 class="function"><a name="jmp32_reg-4">jmp32_reg/4</a></h3>
+<div class="spec">
+<p><tt>jmp32_reg(Op::<a href="#type-bpf_jmp_op">bpf_jmp_op()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>, Off::<a href="#type-bpf_off">bpf_off()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
+<p> </p>
+</div><p>
+  <code>if ((Src bsr 32) Op (Dst bsr 32)) skip Off instructions</code></p>
+
+<h3 class="function"><a name="jmp64_imm-4">jmp64_imm/4</a></h3>
+<div class="spec">
+<p><tt>jmp64_imm(Op::<a href="#type-bpf_jmp_op">bpf_jmp_op()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Imm::<a href="#type-bpf_imm">bpf_imm()</a>, Off::<a href="#type-bpf_off">bpf_off()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
+<p> </p>
+</div><p>
+  <code>if (Imm Op Dst) skip Off instructions</code></p>
+
+<h3 class="function"><a name="jmp64_reg-4">jmp64_reg/4</a></h3>
+<div class="spec">
+<p><tt>jmp64_reg(Op::<a href="#type-bpf_jmp_op">bpf_jmp_op()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>, Off::<a href="#type-bpf_off">bpf_off()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
+<p> </p>
+</div><p>
+  <code>if (Src Op Dst) skip Off instructions</code></p>
+
+<h3 class="function"><a name="jmp_a-1">jmp_a/1</a></h3>
+<div class="spec">
+<p><tt>jmp_a(Off::<a href="#type-bpf_off">bpf_off()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
+<p> </p>
+</div><p>
+  <code>skip Off instructions</code></p>
 
 <h3 class="function"><a name="ld_imm64_raw_full-6">ld_imm64_raw_full/6</a></h3>
 <div class="spec">
