@@ -37,15 +37,10 @@ eBPF instructions generation.</p>
 <tr><td valign="top"><a href="#alu64_reg-3">alu64_reg/3</a></td><td>
   Generates an eBPF instruction that performs ALU operation Op with
   register arguments Src and Dst, and store the result in Dst.</td></tr>
-<tr><td valign="top"><a href="#assemble-1">assemble/1</a></td><td>
-  Assembles a list of bpf_instruction records into
-  binary form which can then be loaded to the kernel via load/2.</td></tr>
-<tr><td valign="top"><a href="#bpf_helper_to_int-1">bpf_helper_to_int/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#disassemble-1">disassemble/1</a></td><td>
-  Disassembles an eBPF program in binary form to a
-  list of bpf_instruction records.</td></tr>
+<tr><td valign="top"><a href="#call_helper-1">call_helper/1</a></td><td>
+  <code>r0 = Helper(r1,r2,r3,r4,r5)</code></td></tr>
 <tr><td valign="top"><a href="#emit_call-1">emit_call/1</a></td><td>
-  Generates an eBPF instruction that calls an eBPF helper function.</td></tr>
+  <code>r0 = Func(r1,r2,r3,r4,r5)</code></td></tr>
 <tr><td valign="top"><a href="#exit_insn-0">exit_insn/0</a></td><td>
   Generates an eBPF instruction that returns from the
   current function.</td></tr>
@@ -134,34 +129,19 @@ eBPF instructions generation.</p>
   Generates an eBPF instruction that performs ALU operation Op with
   register arguments Src and Dst, and store the result in Dst.</p>
 
-<h3 class="function"><a name="assemble-1">assemble/1</a></h3>
+<h3 class="function"><a name="call_helper-1">call_helper/1</a></h3>
 <div class="spec">
-<p><tt>assemble(BpfInstructions::[<a href="#type-bpf_instruction">bpf_instruction()</a>]) -&gt; binary()</tt><br></p>
+<p><tt>call_helper(Helper::<a href="#type-bpf_helper">bpf_helper()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Assembles a list of bpf_instruction records into
-  binary form which can then be loaded to the kernel via load/2.</p>
-
-<h3 class="function"><a name="bpf_helper_to_int-1">bpf_helper_to_int/1</a></h3>
-<div class="spec">
-<p><tt>bpf_helper_to_int(X1::<a href="#type-bpf_helper">bpf_helper()</a>) -&gt; <a href="#type-bpf_imm">bpf_imm()</a></tt><br></p>
-<p> </p>
-</div>
-
-<h3 class="function"><a name="disassemble-1">disassemble/1</a></h3>
-<div class="spec">
-<p><tt>disassemble(BpfProgramBin::binary()) -&gt; [<a href="#type-bpf_instruction">bpf_instruction()</a>]</tt><br></p>
-<p> </p>
-</div><p>
-  Disassembles an eBPF program in binary form to a
-  list of bpf_instruction records.</p>
+  <code>r0 = Helper(r1,r2,r3,r4,r5)</code></p>
 
 <h3 class="function"><a name="emit_call-1">emit_call/1</a></h3>
 <div class="spec">
-<p><tt>emit_call(Func::<a href="#type-bpf_helper">bpf_helper()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
+<p><tt>emit_call(Func::integer()) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Generates an eBPF instruction that calls an eBPF helper function.</p>
+  <code>r0 = Func(r1,r2,r3,r4,r5)</code></p>
 
 <h3 class="function"><a name="exit_insn-0">exit_insn/0</a></h3>
 <div class="spec">
