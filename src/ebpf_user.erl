@@ -17,6 +17,7 @@
     update_map_element/4,
     lookup_map_element/4,
     delete_map_element/2,
+    get_map_next_key/2,
     attach_socket_filter/2,
     attach_xdp/2,
     close/1
@@ -157,6 +158,16 @@ delete_map_element(Map, Key) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Retries the next key after Key in the eBPF map Map, or the first
+%% key if Key is not in Map.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_map_next_key(bpf_map(), binary()) -> {'ok', binary()} | {'error', atom()}.
+get_map_next_key(Map, Key) ->
+    bpf_get_map_next_key(Map, Key).
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Applies a loaded eBPF program as returned by load/1 to a socket.
 %% @end
 %%--------------------------------------------------------------------
@@ -237,6 +248,10 @@ bpf_lookup_map_element(_Map, _Key, _ValueSize, _Flags) ->
 
 -spec bpf_delete_map_element(bpf_map(), binary()) -> 'ok' | {'error', atom()}.
 bpf_delete_map_element(_Map, _Key) ->
+    not_loaded(?LINE).
+
+-spec bpf_get_map_next_key(bpf_map(), binary()) -> {'ok', binary()} | {'error', atom()}.
+bpf_get_map_next_key(_Map, _Key) ->
     not_loaded(?LINE).
 
 -spec bpf_close(integer()) -> {'ok'} | {'error', atom()}.
