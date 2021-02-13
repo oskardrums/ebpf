@@ -19,6 +19,8 @@
     alu64_reg/3,
     alu32_reg/3,
     alu32_imm/3,
+    ld_imm64_raw_full/6,
+    ld_map_fd/2,
     st_mem/4,
     stx_mem/4,
     emit_call/1,
@@ -169,6 +171,41 @@ st_mem(Size, Dst, Off, Imm) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Generates a sequence of eBPF instructions that loads a 64 bit
+%% immediate value computed from (Imm1 bsl 32) bor Imm2 into Dst.
+%% Src should be set to 0.
+%% @end
+%%--------------------------------------------------------------------
+-spec ld_imm64_raw_full(bpf_reg(), bpf_reg(), bpf_off(), bpf_off(), bpf_imm(), bpf_imm()) ->
+    [bpf_instruction()].
+ld_imm64_raw_full(Dst, Src, Off1, Off2, Imm1, Imm2) ->
+    [
+        #bpf_instruction{
+            code = {ld, dw, imm},
+            dst_reg = Dst,
+            src_reg = Src,
+            off = Off1,
+            imm = Imm1
+        },
+        #bpf_instruction{
+            code = {ld, w, imm},
+            off = Off2,
+            imm = Imm2
+        }
+    ].
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates a sequence of eBPF instructions that loads the memory
+%% address of an eBPF map given by MapFd into Dst.
+%% @end
+%%--------------------------------------------------------------------
+-spec ld_map_fd(bpf_reg(), bpf_imm()) -> [bpf_instruction()].
+ld_map_fd(Dst, MapFd) ->
+    ld_imm64_raw_full(Dst, ?BPF_PSEUDO_MAP_FD, 0, 0, MapFd, 0).
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Generates an eBPF instruction that stores the value of Src in the
 %% memory location pointed by Dst's value plus Off.
 %% @end
@@ -267,6 +304,12 @@ store_buffer(<<>>, _Off, Acc) ->
     Acc;
 store_buffer(BinImm, Off, Acc) ->
     store_buffer(<<BinImm/binary, 0:(32 - bit_size(BinImm))>>, Off, Acc).
+
+%%%===================================================================
+%%% Convenient "enum"s
+%%%
+%%% used as Imm argument for some eBPF instructions
+%%%===================================================================
 
 -spec bpf_helper_to_int(bpf_helper()) -> bpf_imm().
 bpf_helper_to_int(unspec) -> 0;

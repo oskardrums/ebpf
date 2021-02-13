@@ -14,6 +14,7 @@
     disassemble/1,
     load/2,
     verify/2,
+    create_map/5,
     attach_socket_filter/2,
     attach_xdp/2
 ]).
@@ -24,6 +25,10 @@
 -define(LIBNAME, ?MODULE).
 
 -include("ebpf.hrl").
+
+-opaque bpf_map() :: integer().
+
+-export_type([bpf_map/0]).
 
 %%%===================================================================
 %%% API
@@ -87,6 +92,28 @@ load(BpfProgramType, BpfProgramBin) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Creates a new eBPF map.
+%% If successful returns a file descriptor representing the created map.
+%% @end
+%%--------------------------------------------------------------------
+-spec create_map(
+    Type :: bpf_map_type(),
+    KeySize :: integer(),
+    ValueSize :: integer(),
+    MaxEntries :: integer(),
+    Flags :: non_neg_integer()
+) -> {'ok', bpf_map()} | {'error', atom()}.
+create_map(Type, KeySize, ValueSize, MaxEntries, Flags) ->
+    bpf_create_map(
+        bpf_map_type_to_int(Type),
+        KeySize,
+        ValueSize,
+        MaxEntries,
+        Flags
+    ).
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Applies a loaded eBPF program as returned by load/1 to a socket.
 %% @end
 %%--------------------------------------------------------------------
@@ -139,6 +166,11 @@ bpf_attach_socket_filter(_SockFd, _ProgFd) ->
 
 -spec bpf_attach_xdp(non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', term()}.
 bpf_attach_xdp(_IfIndex, _ProgFd) ->
+    not_loaded(?LINE).
+
+-spec bpf_create_map(non_neg_integer(), integer(), integer(), integer(), non_neg_integer()) ->
+    {'ok', non_neg_integer()} | {'error', atom()}.
+bpf_create_map(_Type, _KeySize, _ValueSize, _MaxEntries, _Flags) ->
     not_loaded(?LINE).
 
 init() ->
@@ -368,3 +400,35 @@ bpf_prog_type_to_int(struct_ops) -> 27;
 bpf_prog_type_to_int(ext) -> 28;
 bpf_prog_type_to_int(lsm) -> 29;
 bpf_prog_type_to_int(sk_lookup) -> 30.
+
+-spec bpf_map_type_to_int(bpf_map_type()) -> bpf_imm().
+bpf_map_type_to_int(unspec) -> 0;
+bpf_map_type_to_int(hash) -> 1;
+bpf_map_type_to_int(array) -> 2;
+bpf_map_type_to_int(prog_array) -> 3;
+bpf_map_type_to_int(perf_event_array) -> 4;
+bpf_map_type_to_int(percpu_hash) -> 5;
+bpf_map_type_to_int(percpu_array) -> 6;
+bpf_map_type_to_int(stack_trace) -> 7;
+bpf_map_type_to_int(cgroup_array) -> 8;
+bpf_map_type_to_int(lru_hash) -> 9;
+bpf_map_type_to_int(lru_percpu_hash) -> 10;
+bpf_map_type_to_int(lpm_trie) -> 11;
+bpf_map_type_to_int(array_of_maps) -> 12;
+bpf_map_type_to_int(hash_of_maps) -> 13;
+bpf_map_type_to_int(devmap) -> 14;
+bpf_map_type_to_int(sockmap) -> 15;
+bpf_map_type_to_int(cpumap) -> 16;
+bpf_map_type_to_int(xskmap) -> 17;
+bpf_map_type_to_int(sockhash) -> 18;
+bpf_map_type_to_int(cgroup_storage) -> 19;
+bpf_map_type_to_int(reuseport_sockarray) -> 20;
+bpf_map_type_to_int(percpu_cgroup_storage) -> 21;
+bpf_map_type_to_int(queue) -> 22;
+bpf_map_type_to_int(stack) -> 23;
+bpf_map_type_to_int(sk_storage) -> 24;
+bpf_map_type_to_int(devmap_hash) -> 25;
+bpf_map_type_to_int(struct_ops) -> 26;
+bpf_map_type_to_int(ringbuf) -> 27;
+bpf_map_type_to_int(inode_storage) -> 28;
+bpf_map_type_to_int(task_storage) -> 29.
