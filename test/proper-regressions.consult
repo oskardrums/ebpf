@@ -1,2 +1,0 @@
-
-{prop_ebpf,prop_test,[{bpf_instruction,{ld,b,imm},0,0,0,0}]}.
