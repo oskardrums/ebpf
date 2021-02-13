@@ -2,33 +2,24 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Module ebpf_lib</title>
+<title>Module ebpf_user</title>
 <link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
 </head>
 <body bgcolor="white">
 <div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
 <hr>
 
-<h1>Module ebpf_lib</h1>
-<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
-   Low level Linux eBPF library.
+<h1>Module ebpf_user</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
+   Interactions with the eBPF system.
 <p>Copyright © (C) 2021, moskar</p>
 
 <p><b>Authors:</b> moskar (<a href="mailto:moskar.drummer@gmail.com"><tt>moskar.drummer@gmail.com</tt></a>).</p>
 
 <h2><a name="description">Description</a></h2>
-   Low level Linux eBPF library
-<h2><a name="types">Data Types</a></h2>
-
-<h3 class="typedecl"><a name="type-bpf_map">bpf_map()</a></h3>
-<p><b>abstract datatype</b>: <tt>bpf_map()</tt></p>
-
-
+   Interactions with the eBPF system
 <h2><a name="index">Function Index</a></h2>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#assemble-1">assemble/1</a></td><td>
-  Assembles a list of bpf_instruction records into
-  binary form which can then be loaded to the kernel via load/2.</td></tr>
-<tr><td valign="top"><a href="#attach_socket_filter-2">attach_socket_filter/2</a></td><td>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#attach_socket_filter-2">attach_socket_filter/2</a></td><td>
   Applies a loaded eBPF program as returned by load/1 to a socket.</td></tr>
 <tr><td valign="top"><a href="#attach_xdp-2">attach_xdp/2</a></td><td>
   Applies a loaded eBPF XDP program as returned by load/1 to
@@ -37,9 +28,6 @@
   Closes an eBPF map or program.</td></tr>
 <tr><td valign="top"><a href="#create_map-5">create_map/5</a></td><td>
   Creates a new eBPF map.</td></tr>
-<tr><td valign="top"><a href="#disassemble-1">disassemble/1</a></td><td>
-  Disassembles an eBPF program in binary form to a
-  list of bpf_instruction records.</td></tr>
 <tr><td valign="top"><a href="#load-2">load/2</a></td><td>
   Attempts to load an eBPF program in binary form to the kernel.</td></tr>
 <tr><td valign="top"><a href="#verify-2">verify/2</a></td><td>
@@ -49,14 +37,6 @@ Verifies an eBPF program in binary form with the kernel's verifier.</td></tr>
 </table>
 
 <h2><a name="functions">Function Details</a></h2>
-
-<h3 class="function"><a name="assemble-1">assemble/1</a></h3>
-<div class="spec">
-<p><tt>assemble(BpfInstructions::[<a href="#type-bpf_instruction">bpf_instruction()</a>]) -&gt; binary()</tt><br></p>
-<p> </p>
-</div><p>
-  Assembles a list of bpf_instruction records into
-  binary form which can then be loaded to the kernel via load/2.</p>
 
 <h3 class="function"><a name="attach_socket_filter-2">attach_socket_filter/2</a></h3>
 <div class="spec">
@@ -87,14 +67,6 @@ Verifies an eBPF program in binary form with the kernel's verifier.</td></tr>
 </div><p>
   Creates a new eBPF map.
   If successful returns a file descriptor representing the created map.</p>
-
-<h3 class="function"><a name="disassemble-1">disassemble/1</a></h3>
-<div class="spec">
-<p><tt>disassemble(BpfProgramBin::binary()) -&gt; [<a href="#type-bpf_instruction">bpf_instruction()</a>]</tt><br></p>
-<p> </p>
-</div><p>
-  Disassembles an eBPF program in binary form to a
-  list of bpf_instruction records.</p>
 
 <h3 class="function"><a name="load-2">load/2</a></h3>
 <div class="spec">
