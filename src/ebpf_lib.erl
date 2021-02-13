@@ -16,7 +16,8 @@
     verify/2,
     create_map/5,
     attach_socket_filter/2,
-    attach_xdp/2
+    attach_xdp/2,
+    close/1
 ]).
 
 -on_load(init/0).
@@ -137,6 +138,15 @@ attach_xdp(IfName, ProgFd) when is_list(IfName) ->
     {ok, IfIndex} = net:if_name2index(IfName),
     bpf_attach_xdp(IfIndex, ProgFd).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Closes an eBPF map or program.
+%% @end
+%%--------------------------------------------------------------------
+-spec close(bpf_map() | integer()) -> 'ok' | {'error', atom()}.
+close(Fd) ->
+    bpf_close(Fd).
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -171,6 +181,10 @@ bpf_attach_xdp(_IfIndex, _ProgFd) ->
 -spec bpf_create_map(non_neg_integer(), integer(), integer(), integer(), non_neg_integer()) ->
     {'ok', non_neg_integer()} | {'error', atom()}.
 bpf_create_map(_Type, _KeySize, _ValueSize, _MaxEntries, _Flags) ->
+    not_loaded(?LINE).
+
+-spec bpf_close(integer()) -> {'ok'} | {'error', atom()}.
+bpf_close(_Fd) ->
     not_loaded(?LINE).
 
 init() ->

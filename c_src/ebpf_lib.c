@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <sys/socket.h>
 #include <string.h>
+#include <unistd.h>
 
 /* copied from otp/erts/emulator/beam/erl_posix_str.c */
 char *
@@ -860,12 +861,41 @@ ebpf_create_map5(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
   return enif_make_tuple2(env, mk_atom(env, "ok"), enif_make_int(env, res));
 }
 
+static ERL_NIF_TERM
+ebpf_close1(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  int fd = -1;
+  int res = -1;
+
+  if (argc != 1)
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(!enif_get_int( env, argv[0], &fd))
+    {
+      return enif_make_badarg(env);
+    }
+
+  do {
+    res = close(fd);
+  } while (errno == EINTR);
+
+  if (res < 0)
+    {
+      return mk_error(env, erl_errno_id(errno));
+    }
+
+  return mk_atom(env, "ok");
+}
+
 static ErlNifFunc nif_funcs[] = {
 				 {"bpf_load_program", 2, ebpf_load_program, 0},
 				 {"bpf_attach_socket_filter", 2, ebpf_attach_socket_filter, 0},
 				 {"bpf_attach_xdp", 2, ebpf_attach_xdp, 0},
 				 {"bpf_verify_program", 5, ebpf_verify_program5, 0},
-				 {"bpf_create_map", 5, ebpf_create_map5, 0}
+				 {"bpf_create_map", 5, ebpf_create_map5, 0},
+				 {"bpf_close", 1, ebpf_close1, 0}
 };
 
 ERL_NIF_INIT(ebpf_lib, nif_funcs, NULL, NULL, NULL, NULL);
