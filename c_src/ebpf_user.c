@@ -889,13 +889,139 @@ ebpf_close1(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
   return mk_atom(env, "ok");
 }
 
+static ERL_NIF_TERM
+ebpf_update_map_element4(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  int fd;
+  ErlNifBinary key = {0,};
+  ErlNifBinary value = {0,};
+  __u64 flags = 0;
+
+  int res = -1;
+
+  if(argc != 4)
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(!enif_get_int(       env, argv[0], &fd   )
+  || !enif_inspect_binary(env, argv[1], &key  )
+  || !enif_inspect_binary(env, argv[2], &value)
+  || !enif_get_uint64(    env, argv[3], (unsigned long *)&flags))
+    {
+      return enif_make_badarg(env);
+    }
+
+  res = bpf_map_update_elem(fd, key.data, value.data, flags);
+  if (res < 0)
+    {
+      return mk_error(env, erl_errno_id(errno));
+    }
+
+  return mk_atom(env, "ok");
+}
+
+static ERL_NIF_TERM
+ebpf_lookup_map_element4(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  int fd;
+  ErlNifBinary key = {0,};
+  ERL_NIF_TERM value = {0,};
+  int value_size = 0;
+    __u64 flags = 0;
+
+  int res = -1;
+
+  if(argc != 4)
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(!enif_get_int(       env, argv[0], &fd   )
+  || !enif_inspect_binary(env, argv[1], &key  )
+  || !enif_get_int(       env, argv[2], &value_size)
+  || !enif_get_uint64(    env, argv[3], (unsigned long *)&flags))
+    {
+      return enif_make_badarg(env);
+    }
+
+  res = bpf_map_lookup_elem_flags(fd, key.data, enif_make_new_binary(env, value_size, &value), flags);
+  if (res < 0)
+    {
+      return mk_error(env, erl_errno_id(errno));
+    }
+
+  return enif_make_tuple2(env, mk_atom(env, "ok"), value);
+}
+
+static ERL_NIF_TERM
+ebpf_delete_map_element2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  int fd;
+  ErlNifBinary key = {0,};
+
+  int res = -1;
+
+  if(argc != 2)
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(!enif_get_int(       env, argv[0], &fd   )
+  || !enif_inspect_binary(env, argv[1], &key  ))
+    {
+      return enif_make_badarg(env);
+    }
+
+  res = bpf_map_delete_elem(fd, key.data);
+  if (res < 0)
+    {
+      return mk_error(env, erl_errno_id(errno));
+    }
+
+  return mk_atom(env, "ok");
+}
+
+static ERL_NIF_TERM
+ebpf_get_map_next_key2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  int fd;
+  ErlNifBinary key = {0,};
+  ERL_NIF_TERM next_key = {0,};
+
+  int res = -1;
+
+  if(argc != 2)
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(!enif_get_int(       env, argv[0], &fd   )
+  || !enif_inspect_binary(env, argv[1], &key  ))
+    {
+      return enif_make_badarg(env);
+    }
+
+  res = bpf_map_get_next_key(fd, key.data, enif_make_new_binary(env, key.size, &next_key));
+  if (res < 0)
+    {
+      return mk_error(env, erl_errno_id(errno));
+    }
+
+  return enif_make_tuple2(env, mk_atom(env, "ok"), next_key);
+}
+
 static ErlNifFunc nif_funcs[] = {
 				 {"bpf_load_program", 2, ebpf_load_program, 0},
 				 {"bpf_attach_socket_filter", 2, ebpf_attach_socket_filter, 0},
 				 {"bpf_attach_xdp", 2, ebpf_attach_xdp, 0},
 				 {"bpf_verify_program", 5, ebpf_verify_program5, 0},
 				 {"bpf_create_map", 5, ebpf_create_map5, 0},
-				 {"bpf_close", 1, ebpf_close1, 0}
+				 {"bpf_close", 1, ebpf_close1, 0},
+				 {"bpf_update_map_element", 4, ebpf_update_map_element4, 0},
+				 {"bpf_lookup_map_element", 4, ebpf_lookup_map_element4, 0},
+				 {"bpf_delete_map_element", 2, ebpf_delete_map_element2, 0},
+				 {"bpf_get_map_next_key", 2, ebpf_get_map_next_key2, 0}
 };
 
-ERL_NIF_INIT(ebpf_lib, nif_funcs, NULL, NULL, NULL, NULL);
+ERL_NIF_INIT(ebpf_user, nif_funcs, NULL, NULL, NULL, NULL);

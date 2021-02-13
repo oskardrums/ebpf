@@ -12,7 +12,7 @@
 -compile(export_all).
 
 -include_lib("common_test/include/ct.hrl").
--include("ebpf.hrl").
+-include("ebpf_kern.hrl").
 
 %%--------------------------------------------------------------------
 %% COMMON TEST CALLBACK FUNCTIONS
@@ -165,14 +165,14 @@ end_per_testcase(_TestCase, _Config) ->
 %%--------------------------------------------------------------------
 groups() ->
     [
-        {ebpf_gen_ct, [parallel], [
+        {ebpf_kern_ct, [parallel], [
             alu64_reg_known_good_result_1,
             ld_imm64_raw_full_known_good_result_1,
             ld_map_fd_known_good_result_1
         ]},
-        {ebpf_lib_ct, [parallel], [
-            simple_socket_filter_1,
-            test_user_create_map_hash_1
+        {ebpf_user_ct, [sequence], [
+            test_user_create_map_hash_1,
+            simple_socket_filter_1
         ]}
     ].
 
@@ -193,7 +193,7 @@ groups() ->
 %% @end
 %%--------------------------------------------------------------------
 all() ->
-    [{group, ebpf_gen_ct}, {group, ebpf_lib_ct}].
+    [{group, ebpf_kern_ct}, {group, ebpf_user_ct}].
 
 %%--------------------------------------------------------------------
 %% TEST CASES
@@ -234,33 +234,33 @@ simple_socket_filter_1() ->
 %% @end
 %%--------------------------------------------------------------------
 simple_socket_filter_1(_Config) ->
-    meck:new(ebpf_lib, [passthrough]),
+    meck:new(ebpf_user, [passthrough]),
     meck:expect(
-        ebpf_lib,
+        ebpf_user,
         load,
         fun(socket_filter, <<183, 0, 0, 0, 0, 0, 0, 0, 149, 0, 0, 0, 0, 0, 0, 0>>) -> {ok, 666} end
     ),
-    meck:expect(ebpf_lib, attach_socket_filter, fun(_SockFd, 666) -> ok end),
+    meck:expect(ebpf_user, attach_socket_filter, fun(_SockFd, 666) -> ok end),
 
-    {ok, ProgFd} = ebpf_lib:load(
+    {ok, ProgFd} = ebpf_user:load(
         socket_filter,
-        ebpf_lib:assemble([
+        ebpf_asm:assemble([
             % R0 = 0
-            ebpf_gen:mov64_imm(0, 0),
+            ebpf_kern:mov64_imm(0, 0),
             % return R0
-            ebpf_gen:exit_insn()
+            ebpf_kern:exit_insn()
         ])
     ),
     {ok, S} = socket:open(inet, stream, {raw, 0}),
     {ok, SockFd} = socket:getopt(S, otp, fd),
-    ok = ebpf_lib:attach_socket_filter(SockFd, ProgFd),
+    ok = ebpf_user:attach_socket_filter(SockFd, ProgFd),
 
-    true = meck:validate(ebpf_lib),
-    meck:unload(ebpf_lib).
+    true = meck:validate(ebpf_user),
+    meck:unload(ebpf_user).
 
 test_user_create_map_hash_1() -> [].
 test_user_create_map_hash_1(_Config) ->
-    case ebpf_lib:create_map(hash, 4, 4, 255, 0) of
+    case ebpf_user:create_map(hash, 4, 4, 255, 0) of
         {ok, _Map} -> ok;
         {error, eperm} -> {skip, eperm};
         Other -> {error, Other}
@@ -272,7 +272,7 @@ alu64_reg_known_good_result_1(_Config) ->
         code = {alu64, x, add},
         dst_reg = 1,
         src_reg = 2
-    } = ebpf_gen:alu64_reg(
+    } = ebpf_kern:alu64_reg(
         add,
         1,
         2
@@ -295,7 +295,7 @@ ld_imm64_raw_full_known_good_result_1(_Config) ->
             off = 8008,
             imm = 16#feed
         }
-    ] = ebpf_gen:ld_imm64_raw_full(
+    ] = ebpf_kern:ld_imm64_raw_full(
         1,
         2,
         1337,
@@ -321,4 +321,4 @@ ld_map_fd_known_good_result_1(_Config) ->
             off = 0,
             imm = 0
         }
-    ] = ebpf_gen:ld_map_fd(1, 17).
+    ] = ebpf_kern:ld_map_fd(1, 17).

@@ -2,11 +2,15 @@
 %%% @author Oskar Mazerath <moskar.drummer@gmail.com>
 %%% @copyright (C) 2021, Oskar Mazerath
 %%% @doc
-%%% Library module containing eBPF intructions generation methods.
+%%% eBPF instructions generation.
+%%%
+%%% The functions in this module don't <em>do</em> what they names
+%%% imply, they generate eBPF instructions implementing the implied
+%%% (and documented) semantics.
 %%% @end
 %%% Created :  9 Feb 2021 by Oskar Mazerath <moskar.drummer@gmail.com>
 %%%-------------------------------------------------------------------
--module(ebpf_gen).
+-module(ebpf_kern).
 
 %% API
 -export([
@@ -26,10 +30,14 @@
     jmp_a/1,
     ld_imm64_raw_full/6,
     ld_map_fd/2,
+    ld_abs/2,
+    ld_ind/3,
+    ldx_mem/4,
     st_mem/4,
     stx_mem/4,
+    stx_xadd/4,
     emit_call/1,
-    bpf_helper_to_int/1,
+    call_helper/1,
     stack_printk/1,
     stack_printk/2,
     push_binary/1,
@@ -38,7 +46,7 @@
     push_string/2
 ]).
 
--include("ebpf.hrl").
+-include("ebpf_kern.hrl").
 
 %%%===================================================================
 %%% API
@@ -138,7 +146,7 @@ jmp32_reg(Op, Dst, Src, Off) ->
 -spec jmp64_imm(bpf_jmp_op(), bpf_reg(), bpf_imm(), bpf_off()) -> bpf_instruction().
 jmp64_imm(Op, Dst, Imm, Off) ->
     #bpf_instruction{
-        code = {jmp64, x, Op},
+        code = {jmp64, k, Op},
         dst_reg = Dst,
         off = Off,
         imm = Imm
@@ -152,7 +160,7 @@ jmp64_imm(Op, Dst, Imm, Off) ->
 -spec jmp32_imm(bpf_jmp_op(), bpf_reg(), bpf_imm(), bpf_off()) -> bpf_instruction().
 jmp32_imm(Op, Dst, Imm, Off) ->
     #bpf_instruction{
-        code = {jmp32, x, Op},
+        code = {jmp32, k, Op},
         dst_reg = Dst,
         off = Off,
         imm = Imm
@@ -166,7 +174,7 @@ jmp32_imm(Op, Dst, Imm, Off) ->
 -spec jmp_a(bpf_off()) -> bpf_instruction().
 jmp_a(Off) ->
     #bpf_instruction{
-        code = {jmp32, k, a},
+        code = {jmp64, k, a},
         off = Off
     }.
 
@@ -210,12 +218,21 @@ mov32_imm(Dst, Imm) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Generates an eBPF instruction that calls an eBPF helper function.
+%% `r0 = Func(r1,r2,r3,r4,r5)'
 %% @end
 %%--------------------------------------------------------------------
--spec emit_call(bpf_helper()) -> bpf_instruction().
+-spec emit_call(integer()) -> bpf_instruction().
 emit_call(Func) ->
-    #bpf_instruction{code = {jmp64, k, call}, imm = bpf_helper_to_int(Func)}.
+    #bpf_instruction{code = {jmp64, k, call}, imm = Func}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% `r0 = Helper(r1,r2,r3,r4,r5)'
+%% @end
+%%--------------------------------------------------------------------
+-spec call_helper(bpf_helper()) -> bpf_instruction().
+call_helper(Helper) ->
+    emit_call(bpf_helper_to_int(Helper)).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -279,6 +296,45 @@ ld_map_fd(Dst, MapFd) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% `r0 = *(r6 + imm32)'
+%% @end
+%%--------------------------------------------------------------------
+-spec ld_abs(bpf_size(), bpf_imm()) -> bpf_instruction().
+ld_abs(Size, Imm) ->
+    #bpf_instruction{
+        code = {ld, Size, abs},
+        imm = Imm
+    }.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% `r0 = *(r6 + Src + imm32)'
+%% @end
+%%--------------------------------------------------------------------
+-spec ld_ind(bpf_size(), bpf_reg(), bpf_imm()) -> bpf_instruction().
+ld_ind(Size, Src, Imm) ->
+    #bpf_instruction{
+        code = {ld, Size, ind},
+        src_reg = Src,
+        imm = Imm
+    }.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% `Dst = *(Src + Off)'
+%% @end
+%%--------------------------------------------------------------------
+-spec ldx_mem(bpf_size(), bpf_reg(), bpf_reg(), bpf_off()) -> bpf_instruction().
+ldx_mem(Size, Dst, Src, Off) ->
+    #bpf_instruction{
+        code = {ldx, Size, mem},
+        dst_reg = Dst,
+        src_reg = Src,
+        off = Off
+    }.
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Generates an eBPF instruction that stores the value of Src in the
 %% memory location pointed by Dst's value plus Off.
 %% @end
@@ -287,6 +343,20 @@ ld_map_fd(Dst, MapFd) ->
 stx_mem(Size, Dst, Src, Off) ->
     #bpf_instruction{
         code = {stx, Size, mem},
+        dst_reg = Dst,
+        src_reg = Src,
+        off = Off
+    }.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% `*(Dst + Off) += Src'
+%% @end
+%%--------------------------------------------------------------------
+-spec stx_xadd(bpf_size(), bpf_reg(), bpf_reg(), bpf_off()) -> bpf_instruction().
+stx_xadd(Size, Dst, Src, Off) ->
+    #bpf_instruction{
+        code = {stx, Size, xadd},
         dst_reg = Dst,
         src_reg = Src,
         off = Off
@@ -318,7 +388,7 @@ stack_printk(String, StackHead) ->
                 mov64_reg(1, 10),
                 alu64_imm(add, 1, NewStackHead),
                 mov64_imm(2, -NewStackHead),
-                emit_call(trace_printk)
+                call_helper(trace_printk)
             ],
     Instructions.
 
@@ -377,12 +447,6 @@ store_buffer(<<>>, _Off, Acc) ->
     Acc;
 store_buffer(BinImm, Off, Acc) ->
     store_buffer(<<BinImm/binary, 0:(32 - bit_size(BinImm))>>, Off, Acc).
-
-%%%===================================================================
-%%% Convenient "enum"s
-%%%
-%%% used as Imm argument for some eBPF instructions
-%%%===================================================================
 
 -spec bpf_helper_to_int(bpf_helper()) -> bpf_imm().
 bpf_helper_to_int(unspec) -> 0;
