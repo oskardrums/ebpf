@@ -1,1 +1,3 @@
-c_src/include/* linguist-vendored
+c_src/include/asm/* linguist-vendored
+c_src/include/linux/* linguist-vendored
+c_src/include/uapi/linux/* linguist-vendored
