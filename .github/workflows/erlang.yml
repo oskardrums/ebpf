@@ -29,3 +29,8 @@ jobs:
       run: rebar3 proper --regressions
     - name: Run dialyzer
       run: rebar3 dialyzer
+    - name: Publish docs
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./doc
