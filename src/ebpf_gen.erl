@@ -305,6 +305,12 @@ store_buffer(<<>>, _Off, Acc) ->
 store_buffer(BinImm, Off, Acc) ->
     store_buffer(<<BinImm/binary, 0:(32 - bit_size(BinImm))>>, Off, Acc).
 
+%%%===================================================================
+%%% Convenient "enum"s
+%%%
+%%% used as Imm argument for some eBPF instructions
+%%%===================================================================
+
 -spec bpf_helper_to_int(bpf_helper()) -> bpf_imm().
 bpf_helper_to_int(unspec) -> 0;
 bpf_helper_to_int(map_lookup_elem) -> 1;

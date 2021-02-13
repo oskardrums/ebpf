@@ -75,7 +75,6 @@
 -define(BPF_TAX, 16#00).
 -define(BPF_TXA, 16#80).
 
-
 -define(BPF_PSEUDO_MAP_FD, 1).
 -define(BPF_PSEUDO_MAP_VALUE, 2).
 
@@ -293,6 +292,38 @@
     | 'ktime_get_coarse_ns'
     | 'ima_inode_hash'
     | 'sock_from_file'.
+
+-type bpf_map_type() ::
+    'unspec'
+    | 'hash'
+    | 'array'
+    | 'prog_array'
+    | 'perf_event_array'
+    | 'percpu_hash'
+    | 'percpu_array'
+    | 'stack_trace'
+    | 'cgroup_array'
+    | 'lru_hash'
+    | 'lru_percpu_hash'
+    | 'lpm_trie'
+    | 'array_of_maps'
+    | 'hash_of_maps'
+    | 'devmap'
+    | 'sockmap'
+    | 'cpumap'
+    | 'xskmap'
+    | 'sockhash'
+    | 'cgroup_storage'
+    | 'reuseport_sockarray'
+    | 'percpu_cgroup_storage'
+    | 'queue'
+    | 'stack'
+    | 'sk_storage'
+    | 'devmap_hash'
+    | 'struct_ops'
+    | 'ringbuf'
+    | 'inode_storage'
+    | 'task_storage'.
 
 -type bpf_src() :: 'k' | 'x'.
 

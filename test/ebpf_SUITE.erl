@@ -170,7 +170,10 @@ groups() ->
             ld_imm64_raw_full_known_good_result_1,
             ld_map_fd_known_good_result_1
         ]},
-        {ebpf_lib_ct, [parallel], [simple_socket_filter_1]}
+        {ebpf_lib_ct, [parallel], [
+            simple_socket_filter_1,
+            test_user_create_map_hash_1
+        ]}
     ].
 
 %%--------------------------------------------------------------------
@@ -254,6 +257,14 @@ simple_socket_filter_1(_Config) ->
 
     true = meck:validate(ebpf_lib),
     meck:unload(ebpf_lib).
+
+test_user_create_map_hash_1() -> [].
+test_user_create_map_hash_1(_Config) ->
+    case ebpf_lib:create_map(hash, 4, 4, 255, 0) of
+        {ok, _Map} -> ok;
+        {error, eperm} -> {skip, eperm};
+        Other -> {error, Other}
+    end.
 
 alu64_reg_known_good_result_1() -> [].
 alu64_reg_known_good_result_1(_Config) ->
