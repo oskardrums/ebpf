@@ -28,8 +28,14 @@
   Closes an eBPF map or program.</td></tr>
 <tr><td valign="top"><a href="#create_map-5">create_map/5</a></td><td>
   Creates a new eBPF map.</td></tr>
+<tr><td valign="top"><a href="#delete_map_element-2">delete_map_element/2</a></td><td>
+  Deletes the value associated with Key in eBPF map Map.</td></tr>
 <tr><td valign="top"><a href="#load-2">load/2</a></td><td>
   Attempts to load an eBPF program in binary form to the kernel.</td></tr>
+<tr><td valign="top"><a href="#lookup_map_element-4">lookup_map_element/4</a></td><td>
+  Retrieves the value associated with Key in eBPF map Map.</td></tr>
+<tr><td valign="top"><a href="#update_map_element-4">update_map_element/4</a></td><td>
+  Sets the value associated with Key in eBPF map Map to Value.</td></tr>
 <tr><td valign="top"><a href="#verify-2">verify/2</a></td><td>
   same as verify/3 with default options.</td></tr>
 <tr><td valign="top"><a href="#verify-3">verify/3</a></td><td>  
@@ -68,6 +74,13 @@ Verifies an eBPF program in binary form with the kernel's verifier.</td></tr>
   Creates a new eBPF map.
   If successful returns a file descriptor representing the created map.</p>
 
+<h3 class="function"><a name="delete_map_element-2">delete_map_element/2</a></h3>
+<div class="spec">
+<p><tt>delete_map_element(Map::<a href="#type-bpf_map">bpf_map()</a>, Key::binary()) -&gt; ok | {error, atom()}</tt><br></p>
+<p> </p>
+</div><p>
+  Deletes the value associated with Key in eBPF map Map.</p>
+
 <h3 class="function"><a name="load-2">load/2</a></h3>
 <div class="spec">
 <p><tt>load(BpfProgramType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, BpfProgramBin::binary()) -&gt; {ok, non_neg_integer()} | {error, atom()}</tt><br></p>
@@ -75,6 +88,20 @@ Verifies an eBPF program in binary form with the kernel's verifier.</td></tr>
 </div><p>
   Attempts to load an eBPF program in binary form to the kernel.
   see verify/1 for debugging and checking program validity.</p>
+
+<h3 class="function"><a name="lookup_map_element-4">lookup_map_element/4</a></h3>
+<div class="spec">
+<p><tt>lookup_map_element(Map::<a href="#type-bpf_map">bpf_map()</a>, Key::binary(), ValueSize::non_neg_integer(), Flags::non_neg_integer()) -&gt; {ok, binary()} | {error, atom()}</tt><br></p>
+<p> </p>
+</div><p>
+  Retrieves the value associated with Key in eBPF map Map.</p>
+
+<h3 class="function"><a name="update_map_element-4">update_map_element/4</a></h3>
+<div class="spec">
+<p><tt>update_map_element(Map::<a href="#type-bpf_map">bpf_map()</a>, Key::binary(), Value::binary(), Flags::non_neg_integer()) -&gt; ok | {error, atom()}</tt><br></p>
+<p> </p>
+</div><p>
+  Sets the value associated with Key in eBPF map Map to Value.</p>
 
 <h3 class="function"><a name="verify-2">verify/2</a></h3>
 <div class="spec">
