@@ -12,7 +12,7 @@
 -compile(export_all).
 
 -include_lib("common_test/include/ct.hrl").
--include("ebpf.hrl").
+-include("ebpf_kern.hrl").
 
 %%--------------------------------------------------------------------
 %% COMMON TEST CALLBACK FUNCTIONS
