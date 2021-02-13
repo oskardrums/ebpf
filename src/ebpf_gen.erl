@@ -19,6 +19,11 @@
     alu64_reg/3,
     alu32_reg/3,
     alu32_imm/3,
+    jmp64_reg/4,
+    jmp64_imm/4,
+    jmp32_reg/4,
+    jmp32_imm/4,
+    jmp_a/1,
     ld_imm64_raw_full/6,
     ld_map_fd/2,
     st_mem/4,
@@ -95,6 +100,74 @@ alu32_imm(Op, Dst, Imm) ->
         code = {alu32, k, Op},
         dst_reg = Dst,
         imm = Imm
+    }.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% `if (Src Op Dst) skip Off instructions'
+%% @end
+%%--------------------------------------------------------------------
+-spec jmp64_reg(bpf_jmp_op(), bpf_reg(), bpf_reg(), bpf_off()) -> bpf_instruction().
+jmp64_reg(Op, Dst, Src, Off) ->
+    #bpf_instruction{
+        code = {jmp64, x, Op},
+        dst_reg = Dst,
+        src_reg = Src,
+        off = Off
+    }.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% `if ((Src bsr 32) Op (Dst bsr 32)) skip Off instructions'
+%% @end
+%%--------------------------------------------------------------------
+-spec jmp32_reg(bpf_jmp_op(), bpf_reg(), bpf_reg(), bpf_off()) -> bpf_instruction().
+jmp32_reg(Op, Dst, Src, Off) ->
+    #bpf_instruction{
+        code = {jmp32, x, Op},
+        dst_reg = Dst,
+        src_reg = Src,
+        off = Off
+    }.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% `if (Imm Op Dst) skip Off instructions'
+%% @end
+%%--------------------------------------------------------------------
+-spec jmp64_imm(bpf_jmp_op(), bpf_reg(), bpf_imm(), bpf_off()) -> bpf_instruction().
+jmp64_imm(Op, Dst, Imm, Off) ->
+    #bpf_instruction{
+        code = {jmp64, x, Op},
+        dst_reg = Dst,
+        off = Off,
+        imm = Imm
+    }.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% `if ((Imm bsr 32) Op (Dst bsr 32)) skip Off instructions'
+%% @end
+%%--------------------------------------------------------------------
+-spec jmp32_imm(bpf_jmp_op(), bpf_reg(), bpf_imm(), bpf_off()) -> bpf_instruction().
+jmp32_imm(Op, Dst, Imm, Off) ->
+    #bpf_instruction{
+        code = {jmp32, x, Op},
+        dst_reg = Dst,
+        off = Off,
+        imm = Imm
+    }.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% `skip Off instructions'
+%% @end
+%%--------------------------------------------------------------------
+-spec jmp_a(bpf_off()) -> bpf_instruction().
+jmp_a(Off) ->
+    #bpf_instruction{
+        code = {jmp32, k, a},
+        off = Off
     }.
 
 %%--------------------------------------------------------------------
