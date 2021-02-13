@@ -14,7 +14,8 @@ Two modules are currently included:
 Status
 ------
 This library is not yet feature complete nor is it extensively tested.
-The current API should remain pretty stable, while it is planned to be expanded to expose more eBPF functionalities, and perhaps also include a higher lever interface a la `gen_bpf`.
+
+The current API should remain pretty stable, while it is planned to be expanded to expose more eBPF functionalities and perhaps also include a higher lever interface a la `gen_bpf`.
 
 Documentation
 -------------
