@@ -54,12 +54,18 @@ eBPF instructions generation.</p>
   <code>if (Src Op Dst) skip Off instructions</code></td></tr>
 <tr><td valign="top"><a href="#jmp_a-1">jmp_a/1</a></td><td>
   <code>skip Off instructions</code></td></tr>
+<tr><td valign="top"><a href="#ld_abs-2">ld_abs/2</a></td><td>
+  <code>r0 = *(r6 + imm32)</code></td></tr>
 <tr><td valign="top"><a href="#ld_imm64_raw_full-6">ld_imm64_raw_full/6</a></td><td>
   Generates a sequence of eBPF instructions that loads a 64 bit
   immediate value computed from (Imm1 bsl 32) bor Imm2 into Dst.</td></tr>
+<tr><td valign="top"><a href="#ld_ind-3">ld_ind/3</a></td><td>
+  <code>r0 = *(r6 + Src + imm32)</code></td></tr>
 <tr><td valign="top"><a href="#ld_map_fd-2">ld_map_fd/2</a></td><td>
   Generates a sequence of eBPF instructions that loads the memory
   address of an eBPF map given by MapFd into Dst.</td></tr>
+<tr><td valign="top"><a href="#ldx_mem-4">ldx_mem/4</a></td><td>
+  <code>Dst = *(Src + Off)</code></td></tr>
 <tr><td valign="top"><a href="#mov32_imm-2">mov32_imm/2</a></td><td>
   Generates an eBPF instruction that copies Imm into the
   lower 32 bits of Dst, zeroing the 32 upper bits.</td></tr>
@@ -91,6 +97,8 @@ eBPF instructions generation.</p>
 <tr><td valign="top"><a href="#stx_mem-4">stx_mem/4</a></td><td>
   Generates an eBPF instruction that stores the value of Src in the
   memory location pointed by Dst's value plus Off.</td></tr>
+<tr><td valign="top"><a href="#stx_xadd-4">stx_xadd/4</a></td><td>
+  <code>*(Dst + Off) += Src</code></td></tr>
 </table>
 
 <h2><a name="functions">Function Details</a></h2>
@@ -186,6 +194,13 @@ eBPF instructions generation.</p>
 </div><p>
   <code>skip Off instructions</code></p>
 
+<h3 class="function"><a name="ld_abs-2">ld_abs/2</a></h3>
+<div class="spec">
+<p><tt>ld_abs(Size::<a href="#type-bpf_size">bpf_size()</a>, Imm::<a href="#type-bpf_imm">bpf_imm()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
+<p> </p>
+</div><p>
+  <code>r0 = *(r6 + imm32)</code></p>
+
 <h3 class="function"><a name="ld_imm64_raw_full-6">ld_imm64_raw_full/6</a></h3>
 <div class="spec">
 <p><tt>ld_imm64_raw_full(Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>, Off1::<a href="#type-bpf_off">bpf_off()</a>, Off2::<a href="#type-bpf_off">bpf_off()</a>, Imm1::<a href="#type-bpf_imm">bpf_imm()</a>, Imm2::<a href="#type-bpf_imm">bpf_imm()</a>) -&gt; [<a href="#type-bpf_instruction">bpf_instruction()</a>]</tt><br></p>
@@ -195,6 +210,13 @@ eBPF instructions generation.</p>
   immediate value computed from (Imm1 bsl 32) bor Imm2 into Dst.
   Src should be set to 0.</p>
 
+<h3 class="function"><a name="ld_ind-3">ld_ind/3</a></h3>
+<div class="spec">
+<p><tt>ld_ind(Size::<a href="#type-bpf_size">bpf_size()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>, Imm::<a href="#type-bpf_imm">bpf_imm()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
+<p> </p>
+</div><p>
+  <code>r0 = *(r6 + Src + imm32)</code></p>
+
 <h3 class="function"><a name="ld_map_fd-2">ld_map_fd/2</a></h3>
 <div class="spec">
 <p><tt>ld_map_fd(Dst::<a href="#type-bpf_reg">bpf_reg()</a>, MapFd::<a href="#type-bpf_imm">bpf_imm()</a>) -&gt; [<a href="#type-bpf_instruction">bpf_instruction()</a>]</tt><br></p>
@@ -202,6 +224,13 @@ eBPF instructions generation.</p>
 </div><p>
   Generates a sequence of eBPF instructions that loads the memory
   address of an eBPF map given by MapFd into Dst.</p>
+
+<h3 class="function"><a name="ldx_mem-4">ldx_mem/4</a></h3>
+<div class="spec">
+<p><tt>ldx_mem(Size::<a href="#type-bpf_size">bpf_size()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>, Off::<a href="#type-bpf_off">bpf_off()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
+<p> </p>
+</div><p>
+  <code>Dst = *(Src + Off)</code></p>
 
 <h3 class="function"><a name="mov32_imm-2">mov32_imm/2</a></h3>
 <div class="spec">
@@ -295,6 +324,13 @@ eBPF instructions generation.</p>
 </div><p>
   Generates an eBPF instruction that stores the value of Src in the
   memory location pointed by Dst's value plus Off.</p>
+
+<h3 class="function"><a name="stx_xadd-4">stx_xadd/4</a></h3>
+<div class="spec">
+<p><tt>stx_xadd(Size::<a href="#type-bpf_size">bpf_size()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>, Off::<a href="#type-bpf_off">bpf_off()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
+<p> </p>
+</div><p>
+  <code>*(Dst + Off) += Src</code></p>
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
