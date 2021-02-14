@@ -63,6 +63,8 @@ Retries the next key after Key in the eBPF map Map.</td></tr>
 Loads an eBPF program in binary form to the kernel.</td></tr>
 <tr><td valign="top"><a href="#lookup_map_element-4">lookup_map_element/4</a></td><td>
   Retrieves the value associated with Key in eBPF map Map.</td></tr>
+<tr><td valign="top"><a href="#test_program-4">test_program/4</a></td><td>  
+Performs a test run of Prog with Data as input.</td></tr>
 <tr><td valign="top"><a href="#update_map_element-4">update_map_element/4</a></td><td>
   Sets the value associated with Key in eBPF map Map to Value.</td></tr>
 <tr><td valign="top"><a href="#verify-2">verify/2</a></td><td>
@@ -146,6 +148,29 @@ a handle to the loaded program to the caller.</p>
 <p> </p>
 </div><p>
   Retrieves the value associated with Key in eBPF map Map.</p>
+
+<h3 class="function"><a name="test_program-4">test_program/4</a></h3>
+<div class="spec">
+<p><tt>test_program(Prog::<a href="#type-bpf_prog">bpf_prog()</a>, Repeat::integer(), Data::binary(), DataOutSize::non_neg_integer()) -&gt; {ok, Ret::non_neg_integer(), DataOut::binary(), Duration::non_neg_integer()} | {error, atom()}</tt><br></p>
+<p> </p>
+</div><p><p>  
+Performs a test run of Prog with Data as input.</p>
+ 
+  <p>WARNING: only use with trusted eBPF programs.
+  This function uses the <code>BPF_PROG_TEST_RUN</code> Linux feature, which
+  is unfortunately inherently unsafe if not used correctly. The way
+  <code>BPF_PROG_TEST_RUN</code> works is that the kernel will write <code>DataOut</code>,
+  created by applying <code>Prog</code> to <code>Data</code>, into a userspace buffer of some  
+predetermined size, exposed in this function as DataOutSize.  
+In most cases this is fine because Prog shouldn't create extensively large  
+DataOut in normal use case, but in case where Prog might create an  
+output that is larger DataOutSize, this can lead to buffer overflow.  
+Hence the warning.</p>
+ 
+  <p>If <code>DataOut</code> is not needed, <code>DataOutSize</code> can be safely set to <code>0</code>.</p>
+ 
+  On success, returns the return value of <code>Prog(Data)</code>, as well as <code>DataOut</code>
+  and the duration of the test as reported by the kernel.</p>
 
 <h3 class="function"><a name="update_map_element-4">update_map_element/4</a></h3>
 <div class="spec">
