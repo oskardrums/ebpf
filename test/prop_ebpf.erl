@@ -2,7 +2,6 @@
 
 -include_lib("proper/include/proper.hrl").
 -include("ebpf_kern.hrl").
--include("ebpf_user.hrl").
 
 %%%%%%%%%%%%%%%%%%
 %%% Properties %%%
