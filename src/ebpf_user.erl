@@ -19,6 +19,7 @@
 %% API
 -export([
     load/2,
+    test_program/3,
     verify/2,
     verify/3,
     create_map/5,
@@ -177,6 +178,32 @@ load(BpfProgramType, BpfProgramBin) ->
     bpf_load_program(
         bpf_prog_type_to_int(BpfProgramType),
         BpfProgramBin
+    ).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Performs a test run of Prog with Data as input.
+%%
+%% WARNING: Here Be Dragons!
+%% This function should only be used with trusted eBPF programs.
+%%
+%% This function uses the `BPF_PROG_TEST_RUN' Linux feature, which
+%% is unfortunately currently inherently unsafe as the kernel will write
+%% Data as as transformed by the operation of Prog (so called DataOut)
+%% into a userspace buffer of predetermined size, DataOutSize. In most cases
+%% this is fine because Prog wouldn't usually create extensively large
+%% DataOut, but in cases where Prog might create an output that is larger
+%% DataOutSize, this can lead to buffer overflow. Hence the warning.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec test_program(bpf_prog(), binary(), non_neg_integer()) ->
+    {'ok', non_neg_integer(), binary(), non_neg_integer()} | {'error', atom()}.
+test_program(Prog, Data, DataOutSize) ->
+    bpf_test_program(
+        Prog,
+        Data,
+        DataOutSize
     ).
 
 %%--------------------------------------------------------------------
@@ -353,6 +380,11 @@ bpf_delete_map_element(_Map, _Key) ->
 
 -spec bpf_get_map_next_key(bpf_map(), binary()) -> {'ok', binary()} | {'error', atom()}.
 bpf_get_map_next_key(_Map, _Key) ->
+    not_loaded(?LINE).
+
+-spec bpf_test_program(bpf_prog(), binary(), non_neg_integer()) ->
+    {'ok', non_neg_integer(), binary(), non_neg_integer()} | {'error', atom()}.
+bpf_test_program(_Prog, _Data, _DataOutSize) ->
     not_loaded(?LINE).
 
 -spec bpf_close(integer()) -> {'ok'} | {'error', atom()}.
