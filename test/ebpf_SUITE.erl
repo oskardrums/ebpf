@@ -172,6 +172,7 @@ groups() ->
         ]},
         {ebpf_user_ct, [sequence], [
             test_user_create_map_hash_1,
+            test_example_from_ebpf_kern_docs_1,
             simple_socket_filter_1
         ]}
     ].
@@ -262,6 +263,18 @@ test_user_create_map_hash_1() -> [].
 test_user_create_map_hash_1(_Config) ->
     case ebpf_user:create_map(hash, 4, 4, 255, 0) of
         {ok, _Map} -> ok;
+        {error, eperm} -> {skip, eperm};
+        Other -> {error, Other}
+    end.
+
+test_example_from_ebpf_kern_docs_1() -> [].
+test_example_from_ebpf_kern_docs_1(_Config) ->
+    Instructions = lists:flatten([
+        ebpf_kern:stack_printk("Hey ebpf"),
+        ebpf_kern:exit_insn()
+    ]),
+    case ebpf_user:load(xdp, ebpf_asm:assemble(Instructions)) of
+        {ok, XdpGreetProg} -> ok = ebpf_user:close(XdpGreetProg);
         {error, eperm} -> {skip, eperm};
         Other -> {error, Other}
     end.
