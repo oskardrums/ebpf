@@ -1,0 +1,40 @@
+@author Oskar Mazerath <moskar.drummer@gmail.com>
+@copyright 2021 Oskar Mazerath
+@version 0.2.0
+@title ebpf - Erlang eBPF Library
+
+@doc `ebpf' is an Erlang library for generating and interacting
+with eBPF programs.
+
+== Contents ==
+
+<ol>
+  <li>{@section Introduction}</li>
+  <li>{@section Generating eBPF code}</li>
+  <li>{@section Interacting with eBPF programs}</li>
+</ol>
+
+== Introduction ==
+
+`ebpf' has two main functionalities:
+<ul>
+  <li>Generating eBPF programs that can run in the Linux kernel from Erlang</li>
+  <li>Interacting with eBPF programs from Erlang</li>
+</ul>
+The first is implemented in {@link ebpf_kern}, the latter in {@link ebpf_user}.
+These modules are related, and can integrate with each other, but they can act seperately
+and are not dependent on each other.
+
+`ebpf' also includes the {@link ebpf_asm} module for assembling
+`ebpf_kern' generated instructions into eBPF binary code.
+
+== Generating eBPF code ==
+
+See {@link ebpf_kern}.
+
+== Interacting with eBPF programs ==
+
+See {@link ebpf_user}.
+
+
+@end
