@@ -173,6 +173,8 @@ groups() ->
         {ebpf_user_ct, [sequence], [
             test_user_create_map_hash_1,
             test_example_from_ebpf_kern_docs_1,
+            test_user_test_program_1,
+            test_user_test_program_2,
             simple_socket_filter_1
         ]}
     ].
@@ -265,6 +267,65 @@ test_user_create_map_hash_1(_Config) ->
         {ok, _Map} -> ok;
         {error, eperm} -> {skip, eperm};
         Other -> {error, Other}
+    end.
+
+test_user_test_program_1() -> [].
+test_user_test_program_1(_Config) ->
+    Data =
+        <<220, 166, 50, 111, 234, 102, 178, 104, 223, 17, 67, 189, 8, 0, 69, 0, 0, 60, 13, 111, 64,
+            0, 64, 6, 147, 181, 10, 3, 141, 147, 1, 1, 1, 1, 185, 218, 0, 80, 189, 122, 208, 241, 0,
+            0, 0, 0, 160, 2, 250, 240, 194, 210, 0, 0, 2, 4, 5, 180, 4, 2, 8, 10, 3, 173, 164, 96,
+            0, 0, 0, 0, 1, 3, 3, 7>>,
+
+    case
+        ebpf_user:load(
+            xdp,
+            ebpf_asm:assemble(
+                lists:flatten([
+                    ebpf_kern:mov64_imm(0, -1),
+                    ebpf_kern:exit_insn()
+                ])
+            )
+        )
+    of
+        {ok, Prog} ->
+            {ok, 16#FFFFFFFF, Data, _Duration} = ebpf_user:test_program(
+                Prog,
+                128,
+                Data,
+                byte_size(Data)
+            );
+        {error, eperm} ->
+            {skip, eperm};
+        Other ->
+            {error, Other}
+    end.
+
+test_user_test_program_2() -> [].
+test_user_test_program_2(_Config) ->
+    Data =
+        <<220, 166, 50, 111, 234, 102, 178, 104, 223, 17, 67, 189, 8, 0, 69, 0, 0, 60, 13, 111, 64,
+            0, 64, 6, 147, 181, 10, 3, 141, 147, 1, 1, 1, 1, 185, 218, 0, 80, 189, 122, 208, 241, 0,
+            0, 0, 0, 160, 2, 250, 240, 194, 210, 0, 0, 2, 4, 5, 180, 4, 2, 8, 10, 3, 173, 164, 96,
+            0, 0, 0, 0, 1, 3, 3, 7>>,
+
+    case
+        ebpf_user:load(
+            xdp,
+            ebpf_asm:assemble(
+                lists:flatten([
+                    ebpf_kern:mov64_imm(0, -1),
+                    ebpf_kern:exit_insn()
+                ])
+            )
+        )
+    of
+        {ok, Prog} ->
+            {ok, 16#FFFFFFFF, <<>>, _Duration} = ebpf_user:test_program(Prog, 128, Data, 0);
+        {error, eperm} ->
+            {skip, eperm};
+        Other ->
+            {error, Other}
     end.
 
 test_example_from_ebpf_kern_docs_1() -> [].

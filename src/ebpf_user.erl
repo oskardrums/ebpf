@@ -19,6 +19,7 @@
 %% API
 -export([
     load/2,
+    test_program/4,
     verify/2,
     verify/3,
     create_map/5,
@@ -177,6 +178,38 @@ load(BpfProgramType, BpfProgramBin) ->
     bpf_load_program(
         bpf_prog_type_to_int(BpfProgramType),
         BpfProgramBin
+    ).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Performs a test run of Prog with Data as input.
+%%
+%% WARNING: only use with trusted eBPF programs.
+%% This function uses the `BPF_PROG_TEST_RUN' Linux feature, which
+%% is unfortunately inherently unsafe if not used correctly. The way
+%% `BPF_PROG_TEST_RUN' works is that the kernel will write `DataOut',
+%% created by applying `Prog' to `Data', into a userspace buffer of some
+%% predetermined size, exposed in this function as DataOutSize.
+%% In most cases this is fine because Prog shouldn't create extensively large
+%% DataOut in normal use case, but in case where Prog might create an
+%% output that is larger DataOutSize, this can lead to buffer overflow.
+%% Hence the warning.
+%%
+%% If `DataOut' is not needed, `DataOutSize' can be safely set to `0'.
+%%
+%% On success, returns the return value of `Prog(Data)', as well as `DataOut'
+%% and the duration of the test as reported by the kernel.
+%% @end
+%%--------------------------------------------------------------------
+-spec test_program(bpf_prog(), integer(), binary(), non_neg_integer()) ->
+    {'ok', Ret :: non_neg_integer(), DataOut :: binary(), Duration :: non_neg_integer()}
+    | {'error', atom()}.
+test_program(Prog, Repeat, Data, DataOutSize) ->
+    bpf_test_program(
+        Prog,
+        Repeat,
+        Data,
+        DataOutSize
     ).
 
 %%--------------------------------------------------------------------
@@ -353,6 +386,11 @@ bpf_delete_map_element(_Map, _Key) ->
 
 -spec bpf_get_map_next_key(bpf_map(), binary()) -> {'ok', binary()} | {'error', atom()}.
 bpf_get_map_next_key(_Map, _Key) ->
+    not_loaded(?LINE).
+
+-spec bpf_test_program(bpf_prog(), integer(), binary(), non_neg_integer()) ->
+    {'ok', non_neg_integer(), binary(), non_neg_integer()} | {'error', atom()}.
+bpf_test_program(_Prog, _Repeat, _Data, _DataOutSize) ->
     not_loaded(?LINE).
 
 -spec bpf_close(integer()) -> {'ok'} | {'error', atom()}.

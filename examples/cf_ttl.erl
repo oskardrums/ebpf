@@ -45,11 +45,11 @@ attach_ttl_bpf(SockFd) ->
     ok = ebpf_user:attach_socket_filter(SockFd, Prog),
     {ok, Map}.
 
--spec read_ttl_bpf(bpf_map()) -> 'empty' | {'ok', non_neg_integer()} | {error, term()}.
+-spec read_ttl_bpf(ebpf_user:bpf_map()) -> 'empty' | {'ok', non_neg_integer()} | {error, term()}.
 read_ttl_bpf(Map) ->
     read_ttl_bpf(Map, <<0:32>>, empty).
 
--spec read_ttl_bpf(bpf_map(), binary(), 'empty' | non_neg_integer()) ->
+-spec read_ttl_bpf(ebpf_user:bpf_map(), binary(), 'empty' | non_neg_integer()) ->
     'empty' | {'ok', non_neg_integer()} | {error, term()}.
 read_ttl_bpf(Map, Key, Min) ->
     case ebpf_user:get_map_next_key(Map, Key) of
