@@ -7,12 +7,14 @@ Erlang eBPF library
 Overview
 --------
 `ebpf` facilitates basic interaction with the Linux eBPF system from Erlang.
-Two modules are currently included:
+Three modules are currently included:
 * `ebpf_user` contains NIFs that wrap the Linux native API to eBPF, ultimately calling the `bpf(2)` syscall
 * `ebpf_kern` contains functions that generate eBPF instructions according to different parameters
+* `ebpf_asm` contains eBPF assembly and disassembly routines
 
 Status
 ------
+
 This library is not yet feature complete nor is it extensively tested.
 
 The current API should remain pretty stable, while it is planned to be expanded to expose more eBPF functionalities and perhaps also include a higher lever interface a la `gen_bpf`.
@@ -53,4 +55,5 @@ ok = ebpf_user:attach_socket_filter(SockFd, ProgFd).
 Contributions
 ------------
 Are welcome :)
+
 Fill free to open an issue or a PR if you encounter any problem or have an idea for an improvement.
