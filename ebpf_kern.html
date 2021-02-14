@@ -19,35 +19,48 @@ eBPF instructions generation.
 <h2><a name="description">Description</a></h2><p>   
 eBPF instructions generation.</p>
   
-   The functions in this module don't <em>do</em> what they names
-   imply, they generate eBPF instructions implementing the implied
-   (and documented) semantics.
+   <p>The functions in this module don't <em>do</em> what they names   
+imply, they generate eBPF instructions implementing the implied   
+(and documented) semantics.</p>
+  
+   Instructions generating functions in this module return either a
+   single instruction or a list of instructions ordered by the order
+   of execution. You can always use <code>lists:flatten/1</code> to make this
+   difference transperent, as in
+   <pre>   Instructions = lists:flatten([
+                           ebpf_kern:stack_printk("Hey ebpf"),
+                           ebpf_kern:exit_insn()
+                       ]),
+   {ok, XdpGreetProg} = ebpf_user:load(xdp, ebpf_asm:assemble(Instructions)).</pre><p>
+   Notice that we don't have to worry about whether <a href="#stack_printk-1"><code>stack_printk/1</code></a>
+   or <a href="#exit_insn-0"><code>exit_insn/0</code></a> returns a list of instructions or a single instruction
+   as it is handled by <code>lists:flatten/1</code>.</p>
+  
+   <p>This module is not tied to running only in eBPF enabled environments,
+   you can use <code>ebpf_kern</code> on any system to create eBPF programs which
+   can later run on other nodes, e.g. via <a href="ebpf_user.html#load-2"><code>ebpf_user:load/2</code></a> on a   
+Linux sytem.</p>
+  
+  
 <h2><a name="index">Function Index</a></h2>
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#alu32_imm-3">alu32_imm/3</a></td><td>
-  Generates an eBPF instruction that performs ALU operation Op with
-  immediate argument Imm and register Dst using only the lower 32
-  bits of each, and store the result in Dst.</td></tr>
+  <code>Dst = (Src band 16#FFFFFFF) Op (Imm band 16#FFFFFFF)</code></td></tr>
 <tr><td valign="top"><a href="#alu32_reg-3">alu32_reg/3</a></td><td>
-  Generates an eBPF instruction that performs ALU operation Op with
-  register arguments Src and Dst using only the lower 32 bits of
-  each, and store the result in Dst.</td></tr>
+  <code>Dst = (Src band 16#FFFFFFF) Op (Dst band 16#FFFFFFF)</code></td></tr>
 <tr><td valign="top"><a href="#alu64_imm-3">alu64_imm/3</a></td><td>
-  Generates an eBPF instruction that performs ALU operation Op with
-  immediate argument Imm and register Dst, and store the result in Dst.</td></tr>
+  <code>Dst = Imm Op Dst</code></td></tr>
 <tr><td valign="top"><a href="#alu64_reg-3">alu64_reg/3</a></td><td>
-  Generates an eBPF instruction that performs ALU operation Op with
-  register arguments Src and Dst, and store the result in Dst.</td></tr>
+  <code>Dst = Src Op Dst</code></td></tr>
 <tr><td valign="top"><a href="#call_helper-1">call_helper/1</a></td><td>
   <code>r0 = Helper(r1,r2,r3,r4,r5)</code></td></tr>
 <tr><td valign="top"><a href="#emit_call-1">emit_call/1</a></td><td>
   <code>r0 = Func(r1,r2,r3,r4,r5)</code></td></tr>
 <tr><td valign="top"><a href="#exit_insn-0">exit_insn/0</a></td><td>
-  Generates an eBPF instruction that returns from the
-  current function.</td></tr>
+  <code>return r0</code></td></tr>
 <tr><td valign="top"><a href="#jmp32_imm-4">jmp32_imm/4</a></td><td>
-  <code>if ((Imm bsr 32) Op (Dst bsr 32)) skip Off instructions</code></td></tr>
+  <code>if ((Imm band 16#FFFFFFF) Op (Dst band 16#FFFFFFF)) skip Off instructions</code></td></tr>
 <tr><td valign="top"><a href="#jmp32_reg-4">jmp32_reg/4</a></td><td>
-  <code>if ((Src bsr 32) Op (Dst bsr 32)) skip Off instructions</code></td></tr>
+  <code>if ((Src band 16#FFFFFFF) Op (Dst band 16#FFFFFFF)) skip Off instructions</code></td></tr>
 <tr><td valign="top"><a href="#jmp64_imm-4">jmp64_imm/4</a></td><td>
   <code>if (Imm Op Dst) skip Off instructions</code></td></tr>
 <tr><td valign="top"><a href="#jmp64_reg-4">jmp64_reg/4</a></td><td>
@@ -57,46 +70,40 @@ eBPF instructions generation.</p>
 <tr><td valign="top"><a href="#ld_abs-2">ld_abs/2</a></td><td>
   <code>r0 = *(r6 + imm32)</code></td></tr>
 <tr><td valign="top"><a href="#ld_imm64_raw_full-6">ld_imm64_raw_full/6</a></td><td>
-  Generates a sequence of eBPF instructions that loads a 64 bit
-  immediate value computed from (Imm1 bsl 32) bor Imm2 into Dst.</td></tr>
+  <code>Dst = (Imm1 bsl 32) bor Imm2</code></td></tr>
 <tr><td valign="top"><a href="#ld_ind-3">ld_ind/3</a></td><td>
   <code>r0 = *(r6 + Src + imm32)</code></td></tr>
 <tr><td valign="top"><a href="#ld_map_fd-2">ld_map_fd/2</a></td><td>
-  Generates a sequence of eBPF instructions that loads the memory
-  address of an eBPF map given by MapFd into Dst.</td></tr>
+  <code>Dst = &amp;Map</code></td></tr>
 <tr><td valign="top"><a href="#ldx_mem-4">ldx_mem/4</a></td><td>
   <code>Dst = *(Src + Off)</code></td></tr>
 <tr><td valign="top"><a href="#mov32_imm-2">mov32_imm/2</a></td><td>
-  Generates an eBPF instruction that copies Imm into the
-  lower 32 bits of Dst, zeroing the 32 upper bits.</td></tr>
+  <code>Dst = Imm band 16#FFFFFFF</code></td></tr>
 <tr><td valign="top"><a href="#mov32_reg-2">mov32_reg/2</a></td><td>
-  Generates an eBPF instruction that copies the lower 32 bits of Src
-  into Dst, zeroing the upper 32 bits of Dst in the process.</td></tr>
+  <code>Dst = Src band 16#FFFFFFF</code></td></tr>
 <tr><td valign="top"><a href="#mov64_imm-2">mov64_imm/2</a></td><td>
-  Generates an eBPF instruction that copies Imm into Dst.</td></tr>
+  <code>Dst = Imm</code></td></tr>
 <tr><td valign="top"><a href="#mov64_reg-2">mov64_reg/2</a></td><td>
-  Generates an eBPF instruction that copies Src into Dst.</td></tr>
+  <code>Dst = Src</code></td></tr>
 <tr><td valign="top"><a href="#push_binary-1">push_binary/1</a></td><td>
   Same as push_binary/2, with StackHead set to 0.</td></tr>
 <tr><td valign="top"><a href="#push_binary-2">push_binary/2</a></td><td>
-  Generates a sequence of eBPF instructions that stores a binary on
-  the eBPF stack from offset StackHead-size(String) to StackHead.</td></tr>
+  <code>push Bin at StackHead</code></td></tr>
 <tr><td valign="top"><a href="#push_string-1">push_string/1</a></td><td>
   Same as push_string/2, with StackHead set to 0.</td></tr>
 <tr><td valign="top"><a href="#push_string-2">push_string/2</a></td><td>
-  Generates a sequence of eBPF instructions that stores a string on
-  the eBPF stack from offset StackHead-size(String) to StackHead.</td></tr>
+  <code>push String at StackHead</code></td></tr>
 <tr><td valign="top"><a href="#st_mem-4">st_mem/4</a></td><td>
-  Generates an eBPF instruction that stores Imm in the memory
-  location pointed by Dst's value plus Off.</td></tr>
+  <code>*(Dst + Off) = Imm</code></td></tr>
 <tr><td valign="top"><a href="#stack_printk-1">stack_printk/1</a></td><td>
   Same as stack_printk/2, with StackHead set to 0.</td></tr>
 <tr><td valign="top"><a href="#stack_printk-2">stack_printk/2</a></td><td>
-  Generates a sequence of eBPF instructions that stores a string on
-  the eBPF stack and prints it with the trace_printk helper function.</td></tr>
+  <pre>  push String at StackHead,
+  r1 = &amp;String,
+  r2 = byte_size(String),
+  trace_printk(r1, r2).</pre></td></tr>
 <tr><td valign="top"><a href="#stx_mem-4">stx_mem/4</a></td><td>
-  Generates an eBPF instruction that stores the value of Src in the
-  memory location pointed by Dst's value plus Off.</td></tr>
+  <code>*(Dst + Off) = Src</code></td></tr>
 <tr><td valign="top"><a href="#stx_xadd-4">stx_xadd/4</a></td><td>
   <code>*(Dst + Off) += Src</code></td></tr>
 </table>
@@ -108,34 +115,28 @@ eBPF instructions generation.</p>
 <p><tt>alu32_imm(Op::<a href="#type-bpf_alu_op">bpf_alu_op()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Imm::<a href="#type-bpf_imm">bpf_imm()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Generates an eBPF instruction that performs ALU operation Op with
-  immediate argument Imm and register Dst using only the lower 32
-  bits of each, and store the result in Dst.</p>
+  <code>Dst = (Src band 16#FFFFFFF) Op (Imm band 16#FFFFFFF)</code></p>
 
 <h3 class="function"><a name="alu32_reg-3">alu32_reg/3</a></h3>
 <div class="spec">
 <p><tt>alu32_reg(Op::<a href="#type-bpf_alu_op">bpf_alu_op()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Generates an eBPF instruction that performs ALU operation Op with
-  register arguments Src and Dst using only the lower 32 bits of
-  each, and store the result in Dst.</p>
+  <code>Dst = (Src band 16#FFFFFFF) Op (Dst band 16#FFFFFFF)</code></p>
 
 <h3 class="function"><a name="alu64_imm-3">alu64_imm/3</a></h3>
 <div class="spec">
 <p><tt>alu64_imm(Op::<a href="#type-bpf_alu_op">bpf_alu_op()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Imm::<a href="#type-bpf_imm">bpf_imm()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Generates an eBPF instruction that performs ALU operation Op with
-  immediate argument Imm and register Dst, and store the result in Dst.</p>
+  <code>Dst = Imm Op Dst</code></p>
 
 <h3 class="function"><a name="alu64_reg-3">alu64_reg/3</a></h3>
 <div class="spec">
 <p><tt>alu64_reg(Op::<a href="#type-bpf_alu_op">bpf_alu_op()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Generates an eBPF instruction that performs ALU operation Op with
-  register arguments Src and Dst, and store the result in Dst.</p>
+  <code>Dst = Src Op Dst</code></p>
 
 <h3 class="function"><a name="call_helper-1">call_helper/1</a></h3>
 <div class="spec">
@@ -156,22 +157,21 @@ eBPF instructions generation.</p>
 <p><tt>exit_insn() -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Generates an eBPF instruction that returns from the
-  current function.</p>
+  <code>return r0</code></p>
 
 <h3 class="function"><a name="jmp32_imm-4">jmp32_imm/4</a></h3>
 <div class="spec">
 <p><tt>jmp32_imm(Op::<a href="#type-bpf_jmp_op">bpf_jmp_op()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Imm::<a href="#type-bpf_imm">bpf_imm()</a>, Off::<a href="#type-bpf_off">bpf_off()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  <code>if ((Imm bsr 32) Op (Dst bsr 32)) skip Off instructions</code></p>
+  <code>if ((Imm band 16#FFFFFFF) Op (Dst band 16#FFFFFFF)) skip Off instructions</code></p>
 
 <h3 class="function"><a name="jmp32_reg-4">jmp32_reg/4</a></h3>
 <div class="spec">
 <p><tt>jmp32_reg(Op::<a href="#type-bpf_jmp_op">bpf_jmp_op()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>, Off::<a href="#type-bpf_off">bpf_off()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  <code>if ((Src bsr 32) Op (Dst bsr 32)) skip Off instructions</code></p>
+  <code>if ((Src band 16#FFFFFFF) Op (Dst band 16#FFFFFFF)) skip Off instructions</code></p>
 
 <h3 class="function"><a name="jmp64_imm-4">jmp64_imm/4</a></h3>
 <div class="spec">
@@ -206,9 +206,7 @@ eBPF instructions generation.</p>
 <p><tt>ld_imm64_raw_full(Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>, Off1::<a href="#type-bpf_off">bpf_off()</a>, Off2::<a href="#type-bpf_off">bpf_off()</a>, Imm1::<a href="#type-bpf_imm">bpf_imm()</a>, Imm2::<a href="#type-bpf_imm">bpf_imm()</a>) -&gt; [<a href="#type-bpf_instruction">bpf_instruction()</a>]</tt><br></p>
 <p> </p>
 </div><p>
-  Generates a sequence of eBPF instructions that loads a 64 bit
-  immediate value computed from (Imm1 bsl 32) bor Imm2 into Dst.
-  Src should be set to 0.</p>
+  <code>Dst = (Imm1 bsl 32) bor Imm2</code></p>
 
 <h3 class="function"><a name="ld_ind-3">ld_ind/3</a></h3>
 <div class="spec">
@@ -219,11 +217,10 @@ eBPF instructions generation.</p>
 
 <h3 class="function"><a name="ld_map_fd-2">ld_map_fd/2</a></h3>
 <div class="spec">
-<p><tt>ld_map_fd(Dst::<a href="#type-bpf_reg">bpf_reg()</a>, MapFd::<a href="#type-bpf_imm">bpf_imm()</a>) -&gt; [<a href="#type-bpf_instruction">bpf_instruction()</a>]</tt><br></p>
+<p><tt>ld_map_fd(Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Map::<a href="#type-bpf_imm">bpf_imm()</a>) -&gt; [<a href="#type-bpf_instruction">bpf_instruction()</a>]</tt><br></p>
 <p> </p>
 </div><p>
-  Generates a sequence of eBPF instructions that loads the memory
-  address of an eBPF map given by MapFd into Dst.</p>
+  <code>Dst = &amp;Map</code></p>
 
 <h3 class="function"><a name="ldx_mem-4">ldx_mem/4</a></h3>
 <div class="spec">
@@ -237,30 +234,28 @@ eBPF instructions generation.</p>
 <p><tt>mov32_imm(Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Imm::<a href="#type-bpf_imm">bpf_imm()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Generates an eBPF instruction that copies Imm into the
-  lower 32 bits of Dst, zeroing the 32 upper bits.</p>
+  <code>Dst = Imm band 16#FFFFFFF</code></p>
 
 <h3 class="function"><a name="mov32_reg-2">mov32_reg/2</a></h3>
 <div class="spec">
 <p><tt>mov32_reg(Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Generates an eBPF instruction that copies the lower 32 bits of Src
-  into Dst, zeroing the upper 32 bits of Dst in the process.</p>
+  <code>Dst = Src band 16#FFFFFFF</code></p>
 
 <h3 class="function"><a name="mov64_imm-2">mov64_imm/2</a></h3>
 <div class="spec">
 <p><tt>mov64_imm(Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Imm::<a href="#type-bpf_imm">bpf_imm()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Generates an eBPF instruction that copies Imm into Dst.</p>
+  <code>Dst = Imm</code></p>
 
 <h3 class="function"><a name="mov64_reg-2">mov64_reg/2</a></h3>
 <div class="spec">
 <p><tt>mov64_reg(Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Generates an eBPF instruction that copies Src into Dst.</p>
+  <code>Dst = Src</code></p>
 
 <h3 class="function"><a name="push_binary-1">push_binary/1</a></h3>
 <div class="spec">
@@ -274,8 +269,7 @@ eBPF instructions generation.</p>
 <p><tt>push_binary(Bin::binary(), Head::integer()) -&gt; {[<a href="#type-bpf_instruction">bpf_instruction()</a>], integer()}</tt><br></p>
 <p> </p>
 </div><p>
-  Generates a sequence of eBPF instructions that stores a binary on
-  the eBPF stack from offset StackHead-size(String) to StackHead.</p>
+  <code>push Bin at StackHead</code></p>
 
 <h3 class="function"><a name="push_string-1">push_string/1</a></h3>
 <div class="spec">
@@ -289,16 +283,14 @@ eBPF instructions generation.</p>
 <p><tt>push_string(String::string(), StackHead::integer()) -&gt; {[<a href="#type-bpf_instruction">bpf_instruction()</a>], integer()}</tt><br></p>
 <p> </p>
 </div><p>
-  Generates a sequence of eBPF instructions that stores a string on
-  the eBPF stack from offset StackHead-size(String) to StackHead.</p>
+  <code>push String at StackHead</code></p>
 
 <h3 class="function"><a name="st_mem-4">st_mem/4</a></h3>
 <div class="spec">
 <p><tt>st_mem(Size::<a href="#type-bpf_size">bpf_size()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Off::<a href="#type-bpf_off">bpf_off()</a>, Imm::<a href="#type-bpf_imm">bpf_imm()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Generates an eBPF instruction that stores Imm in the memory
-  location pointed by Dst's value plus Off.</p>
+  <code>*(Dst + Off) = Imm</code></p>
 
 <h3 class="function"><a name="stack_printk-1">stack_printk/1</a></h3>
 <div class="spec">
@@ -312,18 +304,17 @@ eBPF instructions generation.</p>
 <p><tt>stack_printk(String::string(), StackHead::integer()) -&gt; [<a href="#type-bpf_instruction">bpf_instruction()</a>]</tt><br></p>
 <p> </p>
 </div><p>
-  Generates a sequence of eBPF instructions that stores a string on
-  the eBPF stack and prints it with the trace_printk helper function.
-  The stack is overwritten from
-  StackHead-byte_size(String) to StackHead.</p>
+  <pre>  push String at StackHead,
+  r1 = &amp;String,
+  r2 = byte_size(String),
+  trace_printk(r1, r2).</pre></p>
 
 <h3 class="function"><a name="stx_mem-4">stx_mem/4</a></h3>
 <div class="spec">
 <p><tt>stx_mem(Size::<a href="#type-bpf_size">bpf_size()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_reg">bpf_reg()</a>, Off::<a href="#type-bpf_off">bpf_off()</a>) -&gt; <a href="#type-bpf_instruction">bpf_instruction()</a></tt><br></p>
 <p> </p>
 </div><p>
-  Generates an eBPF instruction that stores the value of Src in the
-  memory location pointed by Dst's value plus Off.</p>
+  <code>*(Dst + Off) = Src</code></p>
 
 <h3 class="function"><a name="stx_xadd-4">stx_xadd/4</a></h3>
 <div class="spec">
