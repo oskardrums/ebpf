@@ -3,6 +3,14 @@
 %%% @copyright (C) 2021, moskar
 %%% @doc
 %%% Interactions with the eBPF system
+%%%
+%%% `ebpf_user' contains functions that expose the Linux eBPF userspace API,
+%%% including loading, verifying and applying eBPF programs, as well
+%%% as creating and manipulating eBPF maps.
+%%% For generating binary eBPF programs see {@link ebpf_asm} and {@link ebpf_kern},
+%%% but note that the functions in this module can work with any
+%%% binary eBPF program, not only those created via `ebpf'.
+%%%
 %%% @end
 %%% Created :  7 Feb 2021 by user <moskar.drummer@gmail.home>
 %%%-------------------------------------------------------------------
@@ -28,7 +36,79 @@
 -define(APPNAME, ebpf).
 -define(LIBNAME, ?MODULE).
 
--include("ebpf_user.hrl").
+-type bpf_prog_type() ::
+    'unspec'
+    | 'socket_filter'
+    | 'kprobe'
+    | 'sched_cls'
+    | 'sched_act'
+    | 'tracepoint'
+    | 'xdp'
+    | 'perf_event'
+    | 'cgroup_skb'
+    | 'cgroup_sock'
+    | 'lwt_in'
+    | 'lwt_out'
+    | 'lwt_xmit'
+    | 'sock_ops'
+    | 'sk_skb'
+    | 'cgroup_device'
+    | 'sk_msg'
+    | 'raw_tracepoint'
+    | 'cgroup_sock_addr'
+    | 'lwt_seg6local'
+    | 'lirc_mode2'
+    | 'sk_reuseport'
+    | 'flow_dissector'
+    | 'cgroup_sysctl'
+    | 'raw_tracepoint_writable'
+    | 'cgroup_sockopt'
+    | 'tracing'
+    | 'struct_ops'
+    | 'ext'
+    | 'lsm'
+    | 'sk_lookup'.
+%% An `atom' used to specify the type of an eBPF program, see {@link load/2}, {@link verify/2}
+
+-type bpf_map_type() ::
+    'unspec'
+    | 'hash'
+    | 'array'
+    | 'prog_array'
+    | 'perf_event_array'
+    | 'percpu_hash'
+    | 'percpu_array'
+    | 'stack_trace'
+    | 'cgroup_array'
+    | 'lru_hash'
+    | 'lru_percpu_hash'
+    | 'lpm_trie'
+    | 'array_of_maps'
+    | 'hash_of_maps'
+    | 'devmap'
+    | 'sockmap'
+    | 'cpumap'
+    | 'xskmap'
+    | 'sockhash'
+    | 'cgroup_storage'
+    | 'reuseport_sockarray'
+    | 'percpu_cgroup_storage'
+    | 'queue'
+    | 'stack'
+    | 'sk_storage'
+    | 'devmap_hash'
+    | 'struct_ops'
+    | 'ringbuf'
+    | 'inode_storage'
+    | 'task_storage'.
+%% An `atom' used to specify the type of an eBPF map, see {@link create_map/4}
+
+-opaque bpf_map() :: integer().
+%% An open eBPF map as returned by {@link create_map/4}.
+
+-opaque bpf_prog() :: integer().
+%% A loaded eBPF program as returned by {@link load/2}.
+
 -export_type([bpf_map/0, bpf_prog/0]).
 
 %%%===================================================================
@@ -37,7 +117,7 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% same as verify/3 with default options.
+%% same as {@link verify/3} with default options.
 %% @end
 %%--------------------------------------------------------------------
 -spec verify(bpf_prog_type(), binary()) ->
@@ -48,8 +128,15 @@ verify(BpfProgramType, BpfProgramBin) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Verifies an eBPF program in binary form with the kernel's verifier.
-%% Reports errors in the program, if any, in textual form as returned
-%% by the kernel.
+%%
+%% If the program is deemed valid, the kernel reports a textual
+%% description of the verified program which is returned by this function
+%% as `{ok, Desc}'.
+%%
+%% If the program is deemed invalid, the kernel reports an error log
+%% which is returned as `{error, Errno, ErrorLog}'.
+%% Some errors, such as insufficient permissions, don't generate error logs.
+%% these error are returned as `{error, Errno}'.
 %%
 %% The default values for unspecified options are:
 %% * {log_buffer_size, 4096}
@@ -76,11 +163,16 @@ verify(BpfProgramType, BpfProgramBin, Options) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Attempts to load an eBPF program in binary form to the kernel.
-%% see verify/1 for debugging and checking program validity.
+%% Loads an eBPF program in binary form to the kernel.
+%%
+%% The program is verified by the kernel's verifier before returning
+%% a handle to the loaded program to the caller.
+%%
+%% If the an error is returned by this function, BpfProgramBin can be
+%% verified via {@link verify/2} for an informative error description.
 %% @end
 %%--------------------------------------------------------------------
--spec load(bpf_prog_type(), binary()) -> {'ok', non_neg_integer()} | {'error', atom()}.
+-spec load(bpf_prog_type(), binary()) -> {'ok', bpf_prog()} | {'error', atom()}.
 load(BpfProgramType, BpfProgramBin) ->
     bpf_load_program(
         bpf_prog_type_to_int(BpfProgramType),
@@ -90,7 +182,12 @@ load(BpfProgramType, BpfProgramBin) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Creates a new eBPF map.
-%% If successful returns a file descriptor representing the created map.
+%%
+%% If successful, the returned map can be passed to eBPF programs via
+%% {@link ebpf_kern:ld_map_fd/2} and manipulated from userspace via the
+%% `*_map_element' functions in this module.
+%%
+%% KeySize and ValueSize are given in octets.
 %% @end
 %%--------------------------------------------------------------------
 -spec create_map(
@@ -158,8 +255,11 @@ delete_map_element(Map, Key) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Retries the next key after Key in the eBPF map Map, or the first
-%% key if Key is not in Map.
+%% Retries the next key after Key in the eBPF map Map.
+%%
+%% If Key is not in Map, returns the first key in Map.
+%%
+%% If Key is the last key in Map, returns `{error, enoent}'.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_map_next_key(bpf_map(), binary()) -> {'ok', binary()} | {'error', atom()}.
@@ -168,10 +268,11 @@ get_map_next_key(Map, Key) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Applies a loaded eBPF program as returned by load/1 to a socket.
+%% Applies a loaded eBPF program as returned by {@link load/2} with
+%% `socket_filter' as `BpfProgramType' to a socket.
 %% @end
 %%--------------------------------------------------------------------
--spec attach_socket_filter(non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', atom()}.
+-spec attach_socket_filter(non_neg_integer(), bpf_prog()) -> 'ok' | {'error', atom()}.
 attach_socket_filter(SockFd, ProgFd) ->
     bpf_attach_socket_filter(
         SockFd,
@@ -180,11 +281,11 @@ attach_socket_filter(SockFd, ProgFd) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Applies a loaded eBPF XDP program as returned by load/1 to
-%% a network interface.
+%% Applies a loaded eBPF XDP program as returned by {@link load/2}
+%% with `xdp' a `BpfProgramType' to a network interface.
 %% @end
 %%--------------------------------------------------------------------
--spec attach_xdp(string() | non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', atom()}.
+-spec attach_xdp(string() | non_neg_integer(), bpf_prog()) -> 'ok' | {'error', atom()}.
 attach_xdp(IfIndex, ProgFd) when is_integer(IfIndex) ->
     bpf_attach_xdp(IfIndex, ProgFd);
 attach_xdp(IfName, ProgFd) when is_list(IfName) ->
@@ -196,7 +297,7 @@ attach_xdp(IfName, ProgFd) when is_list(IfName) ->
 %% Closes an eBPF map or program.
 %% @end
 %%--------------------------------------------------------------------
--spec close(bpf_map() | integer()) -> 'ok' | {'error', atom()}.
+-spec close(bpf_map() | bpf_prog()) -> 'ok' | {'error', atom()}.
 close(Fd) ->
     bpf_close(Fd).
 
