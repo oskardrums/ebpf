@@ -41,7 +41,7 @@ Checkout the [examples](examples/).
 A minimal example is given below:
 ```erlang
 {ok, ProgFd} = ebpf_user:load(socket_filter,
-                             ebpf_kern:assemble([
+                             ebpf_asm:assemble([
                                  ebpf_kern:mov64_imm(0,0), % R0 = 0
                                  ebpf_kern:exit_insn()     % return R0
                              ])),
