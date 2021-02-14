@@ -10,7 +10,7 @@
 %%%
 %%% Instructions generating functions in this module return either a
 %%% single instruction or a list of instructions ordered by the order
-%%% of execution. You can always use {@link lists:flatten/1} to make this
+%%% of execution. You can always use `lists:flatten/1' to make this
 %%% difference transperent, as in
 %%% ```
 %%% Instructions = lists:flatten([

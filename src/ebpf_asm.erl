@@ -20,7 +20,7 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Assembles a list of bpf_instruction records into
-%% binary form which can then be loaded to the kernel via load/2.
+%% binary form which can then be loaded to the kernel via {@link ebpf_user:load/2}
 %% @end
 %%--------------------------------------------------------------------
 -spec assemble([bpf_instruction()]) -> binary().
