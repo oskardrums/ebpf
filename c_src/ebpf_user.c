@@ -1078,6 +1078,23 @@ ebpf_test_program4(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
   return enif_make_tuple4(env, mk_atom(env, "ok"), enif_make_uint(env, retval), data_out, enif_make_uint(env, duration));
 }
 
+int ebpf_nif_lib_load(ErlNifEnv* caller_env, void** priv_data, ERL_NIF_TERM load_info)
+{
+  (void)caller_env;
+  (void)priv_data;
+  (void)load_info;
+  return 0;
+}
+
+int ebpf_nif_lib_upgrade(ErlNifEnv* caller_env, void** priv_data, void** old_priv_data, ERL_NIF_TERM load_info)
+{
+  (void)caller_env;
+  (void)priv_data;
+  (void)load_info;
+  (void)old_priv_data;
+  return 0;
+}
+
 static ErlNifFunc nif_funcs[] = {
 				 {"bpf_load_program", 2, ebpf_load_program, 0},
 				 {"bpf_attach_socket_filter", 2, ebpf_attach_socket_filter, 0},
@@ -1092,4 +1109,4 @@ static ErlNifFunc nif_funcs[] = {
 				 {"bpf_test_program", 4, ebpf_test_program4, 0}
 };
 
-ERL_NIF_INIT(ebpf_user, nif_funcs, NULL, NULL, NULL, NULL);
+ERL_NIF_INIT(ebpf_user, nif_funcs, ebpf_nif_lib_load, NULL, ebpf_nif_lib_upgrade, NULL);
