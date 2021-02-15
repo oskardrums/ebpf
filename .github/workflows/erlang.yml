@@ -10,7 +10,7 @@ jobs:
 
   build:
 
-    runs-on: ubuntu-16.04
+    runs-on: self-hosted
 
     container:
       image: erlang:23.2.4
@@ -22,7 +22,7 @@ jobs:
     - name: Compile
       run: rebar3 compile
     - name: Run property tests
-      run: sudo dmesg | grep -i lock && sudo `which rebar3` proper
+      run: sudo `which rebar3` proper
     - name: Run regression tests
       run: rebar3 proper --regressions
     - name: Build docs
