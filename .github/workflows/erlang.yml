@@ -37,4 +37,4 @@ jobs:
           ./rebar3 as test do compile, ct, proper, edoc
           ./rebar3 as test dialyzer
           cd ../
-          rm -rf ebpf/c_src ebpf/src ebpf/doc ebpf/include ebpf/rebar.config ebpf/test
+          rm -rf ebpf/c_src ebpf/src ebpf/doc ebpf/include ebpf/rebar.config ebpf/test ebpf/rebar3 ebpf/priv
