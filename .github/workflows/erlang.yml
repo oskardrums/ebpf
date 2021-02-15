@@ -13,7 +13,7 @@ jobs:
     runs-on: self-hosted
 
     container:
-      image: erlang:23.2.4
+      image: erlang:23.2.4-alpine
 
     steps:
     - uses: actions/checkout@v2
