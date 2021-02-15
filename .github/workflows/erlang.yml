@@ -34,6 +34,7 @@ jobs:
         script: |
           cd ebpf
           wget https://s3.amazonaws.com/rebar3/rebar3 && chmod +x rebar3
-          ./rebar3 as test do compile, ct, proper, edoc, dialyzer
+          ./rebar3 as test do compile, ct, proper, edoc
+          ./rebar3 as test dialyzer
           cd ../
-          rm -rf ebpf/
+          rm -rf ebpf/c_src ebpf/src ebpf/doc ebpf/include ebpf/rebar.config ebpf/test

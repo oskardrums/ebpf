@@ -393,7 +393,7 @@ bpf_get_map_next_key(_Map, _Key) ->
 bpf_test_program(_Prog, _Repeat, _Data, _DataOutSize) ->
     not_loaded(?LINE).
 
--spec bpf_close(integer()) -> {'ok'} | {'error', atom()}.
+-spec bpf_close(integer()) -> 'ok' | {'error', atom()}.
 bpf_close(_Fd) ->
     not_loaded(?LINE).
 
