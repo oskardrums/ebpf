@@ -24,8 +24,6 @@ jobs:
         source: "c_src/*,c_src/asm/*,c_src/linux/*,c_src/uapi/linux/*,doc/*,include/*,rebar.config,src/*,test/*"
         target: "ebpf"
     - name: Run test on eBPF capable host
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.HOST }}
@@ -33,13 +31,11 @@ jobs:
         password: ${{ secrets.PASSWORD }}
         port: ${{ secrets.PORT }}
         script_stop: true
-        envs: GITHUB_TOKEN,GITHUB_ACTIONS,GITHUB_RUN_ID,GITHUB_SHA,GITHUB_RUN_NUMBER,GITHUB_EVENT_NAME,GITHUB_REF
         script: |
           env
           cd ebpf
           wget https://s3.amazonaws.com/rebar3/rebar3 && chmod +x rebar3
           ./rebar3 as test do compile, ct, proper, edoc
           ./rebar3 as test dialyzer
-          ./rebar3 as test coveralls send
           cd ../
           rm -rf ebpf/c_src ebpf/src ebpf/doc ebpf/include ebpf/rebar.config ebpf/test ebpf/rebar3 ebpf/priv
