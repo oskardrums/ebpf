@@ -10,7 +10,7 @@ jobs:
 
   build:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-16.04
 
     container:
       image: erlang:23.2.4
@@ -26,7 +26,7 @@ jobs:
     - name: Run tests
       run: rebar3 do eunit, ct
     - name: Run property tests
-      run: sudo echo 1 > /proc/sys/kernel/sysrq && sudo echo x > /proc/sysrq-trigger && sudo `which rebar3` proper
+      run: sudo `which rebar3` proper
     - name: Run regression tests
       run: rebar3 proper --regressions
     - name: Run dialyzer
