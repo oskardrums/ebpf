@@ -26,7 +26,7 @@ jobs:
     - name: Run tests
       run: rebar3 do eunit, ct
     - name: Run property tests
-      run: sudo `which rebar3` proper
+      run: sudo `which rebar3` proper || sudo dmesg
     - name: Run regression tests
       run: rebar3 proper --regressions
     - name: Run dialyzer
