@@ -1,5 +1,0 @@
-language: erlang
-
-script: "rebar3 do compile, edoc, ct, proper"
-otp_release:
-   - 23.2
