@@ -18,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Deps
-      run: true
+      run: apk add --update build-base
     - name: Compile
       run: rebar3 compile
     - name: Run property tests
