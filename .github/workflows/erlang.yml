@@ -18,11 +18,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Deps
-      run: apt -qq update && apt -y install sudo
+      run: true
     - name: Compile
       run: rebar3 compile
     - name: Run property tests
-      run: sudo `which rebar3` proper
+      run: rebar3 proper || sudo `which rebar3` proper
     - name: Run regression tests
       run: rebar3 proper --regressions
     - name: Build docs
