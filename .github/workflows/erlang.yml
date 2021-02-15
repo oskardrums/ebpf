@@ -35,6 +35,7 @@ jobs:
         script_stop: true
         envs: GITHUB_TOKEN,GITHUB_ACTIONS,GITHUB_RUN_ID,GITHUB_SHA,GITHUB_RUN_NUMBER,GITHUB_EVENT_NAME,GITHUB_REF
         script: |
+          env
           cd ebpf
           wget https://s3.amazonaws.com/rebar3/rebar3 && chmod +x rebar3
           ./rebar3 as test do compile, ct, proper, edoc
