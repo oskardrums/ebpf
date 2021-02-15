@@ -17,6 +17,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Deps
+      run: apt -qq update && apt -y install sudo
     - name: Compile
       run: rebar3 compile
     - name: Build docs
@@ -24,7 +26,7 @@ jobs:
     - name: Run tests
       run: rebar3 do eunit, ct
     - name: Run property tests
-      run: rebar3 proper
+      run: sudo `which rebar3` proper
     - name: Run regression tests
       run: rebar3 proper --regressions
     - name: Run dialyzer
