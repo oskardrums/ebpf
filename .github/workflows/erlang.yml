@@ -12,20 +12,29 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    container:
-      image: erlang:23.2.4
-
     steps:
     - uses: actions/checkout@v2
-    - name: Compile
-      run: rebar3 compile
-    - name: Build docs
-      run: rebar3 edoc
-    - name: Run tests
-      run: rebar3 do eunit, ct
-    - name: Run property tests
-      run: rebar3 proper
-    - name: Run regression tests
-      run: rebar3 proper --regressions
-    - name: Run dialyzer
-      run: rebar3 dialyzer
+    - name: copy
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        port: ${{ secrets.PORT }}
+        password: ${{ secrets.PASSWORD }}
+        source: "c_src/*,c_src/asm/*,c_src/linux/*,c_src/uapi/linux/*,doc/*,include/*,rebar.config,src/*,test/*"
+        target: "ebpf"
+    - name: Run test on eBPF capable host
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        port: ${{ secrets.PORT }}
+        script_stop: true
+        script: |
+          cd ebpf
+          wget https://s3.amazonaws.com/rebar3/rebar3 && chmod +x rebar3
+          ./rebar3 as test do compile, ct, proper, edoc
+          ./rebar3 as test dialyzer
+          cd ../
+          rm -rf ebpf/c_src ebpf/src ebpf/doc ebpf/include ebpf/rebar.config ebpf/test ebpf/rebar3 ebpf/priv
