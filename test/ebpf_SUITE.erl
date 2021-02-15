@@ -237,14 +237,6 @@ simple_socket_filter_1() ->
 %% @end
 %%--------------------------------------------------------------------
 simple_socket_filter_1(_Config) ->
-    meck:new(ebpf_user, [passthrough]),
-    meck:expect(
-        ebpf_user,
-        load,
-        fun(socket_filter, <<183, 0, 0, 0, 0, 0, 0, 0, 149, 0, 0, 0, 0, 0, 0, 0>>) -> {ok, 666} end
-    ),
-    meck:expect(ebpf_user, attach_socket_filter, fun(_SockFd, 666) -> ok end),
-
     {ok, ProgFd} = ebpf_user:load(
         socket_filter,
         ebpf_asm:assemble([
@@ -256,10 +248,7 @@ simple_socket_filter_1(_Config) ->
     ),
     {ok, S} = socket:open(inet, stream, {raw, 0}),
     {ok, SockFd} = socket:getopt(S, otp, fd),
-    ok = ebpf_user:attach_socket_filter(SockFd, ProgFd),
-
-    true = meck:validate(ebpf_user),
-    meck:unload(ebpf_user).
+    ok = ebpf_user:attach_socket_filter(SockFd, ProgFd).
 
 test_user_create_map_hash_1() -> [].
 test_user_create_map_hash_1(_Config) ->

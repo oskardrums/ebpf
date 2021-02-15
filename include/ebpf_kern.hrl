@@ -289,8 +289,8 @@
     | {bpf_alu_class(), bpf_src(), bpf_alu_op()}
     | {bpf_jmp_class(), bpf_src(), bpf_jmp_op()}.
 -type bpf_reg() :: 0..10.
--type bpf_off() :: -(1 bsl 15)..1 bsl 15.
--type bpf_imm() :: -(1 bsl 31)..1 bsl 31.
+-type bpf_off() :: 1 - (1 bsl 15)..(1 bsl 15) - 1.
+-type bpf_imm() :: 1 - (1 bsl 31)..(1 bsl 31) - 1.
 
 -record(bpf_instruction, {
     code = 0 :: bpf_opcode(),
