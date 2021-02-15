@@ -20,6 +20,7 @@ jobs:
         username: ${{ secrets.USERNAME }}
         password: ${{ secrets.PASSWORD }}
         port: ${{ secrets.PORT }}
+        envs: GITHUB_REF
         script: |
           git clone --branch $GITHUB_REF https://github.com/oskardrums/ebpf
           cd ebpf
