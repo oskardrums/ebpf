@@ -17,12 +17,12 @@ jobs:
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.HOST }}
-	username: ${{ secrets.USERNAME }}
-	password: ${{ secrets.PASSWORD }}
-	port: ${{ secrets.PORT }}
-	script: |
-	  git clone --branch ${GITHUB_REF##*/} https://github.com/oskardrums/ebpf
-	  cd ebpf
-	  rebar3 as test do compile, ct, proper, edoco, dialyzer
-	  cd ../
-	  rm -rf ebpf/
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        port: ${{ secrets.PORT }}
+        script: |
+          git clone --branch ${GITHUB_REF##*/} https://github.com/oskardrums/ebpf
+          cd ebpf
+          rebar3 as test do compile, ct, proper, edoco, dialyzer
+          cd ../
+          rm -rf ebpf/
