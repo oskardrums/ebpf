@@ -172,6 +172,7 @@ groups() ->
         ]},
         {ebpf_user_ct, [sequence], [
             test_user_create_map_hash_1,
+            test_user_map_hash_1,
             test_example_from_ebpf_kern_docs_1,
             test_user_test_program_1,
             test_user_test_program_2,
@@ -254,9 +255,27 @@ simple_socket_filter_1(_Config) ->
 test_user_create_map_hash_1() -> [].
 test_user_create_map_hash_1(_Config) ->
     case ebpf_user:create_map(hash, 4, 4, 255, 0) of
-        {ok, _Map} -> ok;
+        {ok, Map} -> ebpf_user:close(Map);
         {error, eperm} -> {skip, eperm};
         Other -> {error, Other}
+    end.
+
+test_user_map_hash_1() -> [].
+test_user_map_hash_1(_Config) ->
+    case ebpf_user:create_map(hash, 4, 4, 5, 0) of
+        {ok, Map} ->
+            Key = <<1, 2, 3, 4>>,
+            Value = <<5, 6, 7, 8>>,
+            Flags = 0,
+            ok = ebpf_user:update_map_element(Map, Key, Value, Flags),
+            {ok, Key} = ebpf_user:get_map_next_key(Map, <<"None">>),
+            {ok, Value} = ebpf_user:lookup_map_element(Map, Key, 4, 0),
+            ok = ebpf_user:delete_map_element(Map, Key),
+            ok = ebpf_user:close(Map);
+        {error, eperm} ->
+            {skip, eperm};
+        Other ->
+            {error, Other}
     end.
 
 test_user_test_program_1() -> [].
