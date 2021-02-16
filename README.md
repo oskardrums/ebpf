@@ -22,7 +22,7 @@ The current API should remain pretty stable, while it is planned to be expanded 
 Documentation
 -------------
 
-	$ rebar3 edoc
+    $ rebar3 edoc
 
 The documentation for the latest version can be browsed at https://oskardrums.github.io/ebpf/
 
@@ -44,16 +44,13 @@ A minimal example is given below:
 ```erlang
 {ok, Prog} = ebpf_user:load(socket_filter,
                              ebpf_asm:assemble([
-							     % Drop all packets
+                                 % Drop all packets
                                  ebpf_kern:mov64_imm(0,0), % R0 = 0
                                  ebpf_kern:exit_insn()     % return R0
                              ])),
-
 {ok, S} = socket:open(inet, stream, {raw, 0}),
 {ok, SockFd} = socket:getopt(S, otp, fd),
-
 ok = ebpf_user:attach_socket_filter(SockFd, Prog), % All new input to S is dropped
-
 ok = ebpf_user:detach_socket_filter(SockFd). % S is back to normal and Prog can be reused
 ```
 
