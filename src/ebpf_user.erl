@@ -30,7 +30,8 @@
     attach_socket_filter/2,
     detach_socket_filter/1,
     attach_xdp/2,
-    close/1
+    close/1,
+    fd/1
 ]).
 
 -on_load(init/0).
@@ -343,6 +344,16 @@ attach_xdp(IfName, ProgFd) when is_list(IfName) ->
 -spec close(bpf_map() | bpf_prog()) -> 'ok' | {'error', atom()}.
 close(Fd) ->
     bpf_close(Fd).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns a File Descriptor for eBPF program or map.
+%%
+%% Can be used for passing a map to eBPF programs, e.g. via {@link ebpf_kern:ld_map_fd/2}.
+%% @end
+%%--------------------------------------------------------------------
+-spec fd(bpf_map() | bpf_prog()) -> non_neg_integer() | {'error', atom()}.
+fd(MapOrProg) -> MapOrProg.
 
 %%%===================================================================
 %%% Internal functions
