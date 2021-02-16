@@ -42,14 +42,19 @@ Checkout the [examples](examples/).
 
 A minimal example is given below:
 ```erlang
-{ok, ProgFd} = ebpf_user:load(socket_filter,
+{ok, Prog} = ebpf_user:load(socket_filter,
                              ebpf_asm:assemble([
+							     % Drop all packets
                                  ebpf_kern:mov64_imm(0,0), % R0 = 0
                                  ebpf_kern:exit_insn()     % return R0
                              ])),
+
 {ok, S} = socket:open(inet, stream, {raw, 0}),
 {ok, SockFd} = socket:getopt(S, otp, fd),
-ok = ebpf_user:attach_socket_filter(SockFd, ProgFd).
+
+ok = ebpf_user:attach_socket_filter(SockFd, Prog), % All new input to S is dropped
+
+ok = ebpf_user:detach_socket_filter(SockFd). % S is back to normal and Prog can be reused
 ```
 
 For projects that build with `rebar3`, add `ebpf` as a dependency in `rebar.config`:

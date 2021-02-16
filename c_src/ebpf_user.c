@@ -828,6 +828,30 @@ ebpf_attach_socket_filter(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ERL_NIF_TERM
+ebpf_detach_socket_filter1(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  int sock_fd = 0, empty = 0;
+  int res = -1;
+
+  if(argc != 1)
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(!enif_get_int(env, argv[0], &sock_fd))
+    {
+      return mk_error(env, "bad_sock_fd");
+    }
+
+  res = setsockopt(sock_fd, SOL_SOCKET, SO_DETACH_BPF, &empty, sizeof(empty));
+  if (res < 0) {
+    return mk_error(env, erl_errno_id(errno));
+  }
+
+  return mk_atom(env, "ok");
+}
+
+static ERL_NIF_TERM
 ebpf_create_map5(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
   int map_type = 0;
@@ -1098,6 +1122,7 @@ int ebpf_nif_lib_upgrade(ErlNifEnv* caller_env, void** priv_data, void** old_pri
 static ErlNifFunc nif_funcs[] = {
 				 {"bpf_load_program", 2, ebpf_load_program, 0},
 				 {"bpf_attach_socket_filter", 2, ebpf_attach_socket_filter, 0},
+				 {"bpf_detach_socket_filter", 1, ebpf_detach_socket_filter1, 0},
 				 {"bpf_attach_xdp", 2, ebpf_attach_xdp, 0},
 				 {"bpf_verify_program", 5, ebpf_verify_program5, 0},
 				 {"bpf_create_map", 5, ebpf_create_map5, 0},

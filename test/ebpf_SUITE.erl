@@ -248,7 +248,8 @@ simple_socket_filter_1(_Config) ->
     ),
     {ok, S} = socket:open(inet, stream, {raw, 0}),
     {ok, SockFd} = socket:getopt(S, otp, fd),
-    ok = ebpf_user:attach_socket_filter(SockFd, ProgFd).
+    ok = ebpf_user:attach_socket_filter(SockFd, ProgFd),
+    ok = ebpf_user:detach_socket_filter(SockFd).
 
 test_user_create_map_hash_1() -> [].
 test_user_create_map_hash_1(_Config) ->

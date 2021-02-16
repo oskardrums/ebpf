@@ -28,6 +28,7 @@
     delete_map_element/2,
     get_map_next_key/2,
     attach_socket_filter/2,
+    detach_socket_filter/1,
     attach_xdp/2,
     close/1
 ]).
@@ -314,6 +315,15 @@ attach_socket_filter(SockFd, ProgFd) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Removes the eBPF program attached to `SockFd'.
+%% @end
+%%--------------------------------------------------------------------
+-spec detach_socket_filter(non_neg_integer()) -> 'ok' | {'error', atom()}.
+detach_socket_filter(SockFd) ->
+    bpf_detach_socket_filter(SockFd).
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Applies a loaded eBPF XDP program as returned by {@link load/2}
 %% with `xdp' a `BpfProgramType' to a network interface.
 %% @end
@@ -359,6 +369,10 @@ bpf_load_program(_BpfProgramType, _BpfProgramBin) ->
 
 -spec bpf_attach_socket_filter(non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', atom()}.
 bpf_attach_socket_filter(_SockFd, _ProgFd) ->
+    not_loaded(?LINE).
+
+-spec bpf_detach_socket_filter(non_neg_integer()) -> 'ok' | {'error', atom()}.
+bpf_detach_socket_filter(_SockFd) ->
     not_loaded(?LINE).
 
 -spec bpf_attach_xdp(non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', atom()}.
