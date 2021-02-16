@@ -57,6 +57,8 @@ Interactions with the eBPF system</p>
 Creates a new eBPF map.</td></tr>
 <tr><td valign="top"><a href="#delete_map_element-2">delete_map_element/2</a></td><td>
   Deletes the value associated with Key in eBPF map Map.</td></tr>
+<tr><td valign="top"><a href="#detach_socket_filter-1">detach_socket_filter/1</a></td><td>
+  Removes the eBPF program attached to <code>SockFd</code>.</td></tr>
 <tr><td valign="top"><a href="#get_map_next_key-2">get_map_next_key/2</a></td><td>  
 Retries the next key after Key in the eBPF map Map.</td></tr>
 <tr><td valign="top"><a href="#load-2">load/2</a></td><td>  
@@ -117,6 +119,13 @@ Creates a new eBPF map.</p>
 <p> </p>
 </div><p>
   Deletes the value associated with Key in eBPF map Map.</p>
+
+<h3 class="function"><a name="detach_socket_filter-1">detach_socket_filter/1</a></h3>
+<div class="spec">
+<p><tt>detach_socket_filter(SockFd::non_neg_integer()) -&gt; ok | {error, atom()}</tt><br></p>
+<p> </p>
+</div><p>
+  Removes the eBPF program attached to <code>SockFd</code>.</p>
 
 <h3 class="function"><a name="get_map_next_key-2">get_map_next_key/2</a></h3>
 <div class="spec">
