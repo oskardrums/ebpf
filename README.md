@@ -52,6 +52,12 @@ A minimal example is given below:
 ok = ebpf_user:attach_socket_filter(SockFd, ProgFd).
 ```
 
+For projects that build with `rebar3`, add `ebpf` as a dependency in `rebar.config`:
+
+```erlang
+{deps, [{ebpf, {git, "https://github.com/oskardrums/ebpf.git", "main"}}]}.
+```
+
 Contributions
 ------------
 Are welcome :)
