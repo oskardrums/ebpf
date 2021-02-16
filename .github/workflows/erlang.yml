@@ -23,7 +23,7 @@ jobs:
         password: ${{ secrets.PASSWORD }}
         source: "c_src/*,c_src/asm/*,c_src/linux/*,c_src/uapi/linux/*,doc/*,include/*,rebar.config,src/*,test/*"
         target: "ebpf"
-    - name: Run test on eBPF capable host
+    - name: Run test in eBPF capable environment
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.HOST }}
@@ -33,8 +33,6 @@ jobs:
         script_stop: true
         script: |
           cd ebpf
-          wget https://s3.amazonaws.com/rebar3/rebar3 && chmod +x rebar3
-          ./rebar3 as test do compile, ct, proper, edoc
-          ./rebar3 as test dialyzer
+          rebar3 as test do compile, ct, proper, dialyzer, edoc
           cd ../
-          rm -rf ebpf/c_src ebpf/src ebpf/doc ebpf/include ebpf/rebar.config ebpf/test ebpf/rebar3 ebpf/priv
+          rm -rf ebpf/c_src ebpf/src ebpf/doc ebpf/include ebpf/rebar.config ebpf/test ebpf/priv
