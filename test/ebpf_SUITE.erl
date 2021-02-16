@@ -176,7 +176,8 @@ groups() ->
             test_example_from_ebpf_kern_docs_1,
             test_user_test_program_1,
             test_user_test_program_2,
-            simple_socket_filter_1
+            simple_socket_filter_1,
+            test_verify_2_cf_ttl_1
         ]}
     ].
 
@@ -405,3 +406,81 @@ ld_map_fd_known_good_result_1(_Config) ->
             imm = 0
         }
     ] = ebpf_kern:ld_map_fd(1, 17).
+
+test_verify_2_cf_ttl_1() -> [].
+test_verify_2_cf_ttl_1(_Config) ->
+    Expected =
+        "0: (61) r0 = *(u32 *)(r1 +16)\n"
+        "1: (15) if r0 == 0x86dd goto pc+3\n"
+        " R0=inv(id=0,umax_value=4294967295,var_off=(0x0; 0xffffffff)) R1=ctx(id=0,off=0,imm=0) R10=fp0,call_-1\n"
+        "2: (bf) r6 = r1\n"
+        "3: (30) r0 = *(u8 *)skb[-1048568]\n"
+        "4: (05) goto pc+2\n"
+        "7: (63) *(u32 *)(r10 -4) = r0\n"
+        "8: (bf) r2 = r10\n"
+        "9: (07) r2 += -4\n",
+    %   "10: (18) r1 = 0xffff914d76c96800\n"
+    %   "12: (85) call bpf_map_lookup_elem#1\n"
+    %   "13: (15) if r0 == 0x0 goto pc+3\n"
+    %   " R0=map_value(id=0,off=0,ks=4,vs=8,imm=0) R6=ctx(id=0,off=0,imm=0) R10=fp0,call_-1\n"
+    %   "14: (b7) r1 = 1\n"
+    %   "15: (db) lock *(u64 *)(r0 +0) += r1\n"
+    %   " R0=map_value(id=0,off=0,ks=4,vs=8,imm=0) R1_w=inv1 R6=ctx(id=0,off=0,imm=0) R10=fp0,call_-1\n"
+    %   " R0=map_value(id=0,off=0,ks=4,vs=8,imm=0) R1_w=inv1 R6=ctx(id=0,off=0,imm=0) R10=fp0,call_-1\n"
+    %   "16: (05) goto pc+9\n"
+    %   "26: (b7) r0 = -1\n"
+    %   "27: (95) exit\n"
+    %   "\n"
+    %   "from 13 to 17: R0=inv0 R6=ctx(id=0,off=0,imm=0) R10=fp0,call_-1\n"
+    %   "17: (18) r1 = 0xffff914d76c96800\n"
+    %   "19: (bf) r2 = r10\n"
+    %   "20: (07) r2 += -4\n"
+    %   "21: (7a) *(u64 *)(r10 -16) = 1\n"
+    %   "22: (bf) r3 = r10\n"
+    %   "23: (07) r3 += -16\n"
+    %   "24: (b7) r4 = 0\n"
+    %   "25: (85) call bpf_map_update_elem#2\n"
+    %   "26: safe\n"
+    %   "\n"
+    %   "from 1 to 5: R0=inv-2032336896 R1=ctx(id=0,off=0,imm=0) R10=fp0,call_-1\n"
+    %   "5: (bf) r6 = r1\n"
+    %   "6: (30) r0 = *(u8 *)skb[-1048569]\n"
+    %   "7: (63) *(u32 *)(r10 -4) = r0\n"
+    %   "8: (bf) r2 = r10\n"
+    %   "9: (07) r2 += -4\n"
+    %   "10: (18) r1 = 0xffff914d76c96800\n"
+    %   "12: (85) call bpf_map_lookup_elem#1\n"
+    %   "13: safe\n"
+    %   "processed 33 insns (limit 131072), stack depth 16\n",
+    {ok, Map} = ebpf_user:create_map(hash, 4, 8, 4, 0),
+    MapFd = ebpf_user:fd(Map),
+    Instructions = lists:flatten([
+        ebpf_kern:ldx_mem(w, 0, 1, 16),
+        ebpf_kern:jmp64_imm(eq, 0, 16#86DD, 3),
+        ebpf_kern:mov64_reg(6, 1),
+        ebpf_kern:ld_abs(b, -16#100000 + 8),
+        ebpf_kern:jmp_a(2),
+        ebpf_kern:mov64_reg(6, 1),
+        ebpf_kern:ld_abs(b, -16#100000 + 7),
+        ebpf_kern:stx_mem(w, 10, 0, -4),
+        ebpf_kern:mov64_reg(2, 10),
+        ebpf_kern:alu64_imm(add, 2, -4),
+        ebpf_kern:ld_map_fd(1, MapFd),
+        ebpf_kern:call_helper(map_lookup_elem),
+        ebpf_kern:jmp64_imm(eq, 0, 0, 3),
+        ebpf_kern:mov64_imm(1, 1),
+        ebpf_kern:stx_xadd(dw, 0, 1, 0),
+        ebpf_kern:jmp_a(9),
+        ebpf_kern:ld_map_fd(1, MapFd),
+        ebpf_kern:mov64_reg(2, 10),
+        ebpf_kern:alu64_imm(add, 2, -4),
+        ebpf_kern:st_mem(dw, 10, -16, 1),
+        ebpf_kern:mov64_reg(3, 10),
+        ebpf_kern:alu64_imm(add, 3, -16),
+        ebpf_kern:mov64_imm(4, 0),
+        ebpf_kern:call_helper(map_update_elem),
+        ebpf_kern:mov64_imm(0, -1),
+        ebpf_kern:exit_insn()
+    ]),
+    {ok, Result} = ebpf_user:verify(socket_filter, ebpf_asm:assemble(Instructions)),
+    Expected = lists:sublist(Result, length(Expected)).
