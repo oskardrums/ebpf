@@ -13,6 +13,7 @@
 -spec attach_ttl_bpf(integer()) -> {'ok', ebpf_user:bpf_map()}.
 attach_ttl_bpf(SockFd) ->
     {ok, Map} = ebpf_user:create_map(hash, 4, 8, 4, 0),
+    MapFd = ebpf_user:fd(Map),
     Instructions = lists:flatten([
         ebpf_kern:ldx_mem(w, 0, 1, 16),
         ebpf_kern:jmp64_imm(eq, 0, 16#86DD0000, 3),
@@ -24,13 +25,13 @@ attach_ttl_bpf(SockFd) ->
         ebpf_kern:stx_mem(w, 10, 0, -4),
         ebpf_kern:mov64_reg(2, 10),
         ebpf_kern:alu64_imm(add, 2, -4),
-        ebpf_kern:ld_map_fd(1, Map),
+        ebpf_kern:ld_map_fd(1, MapFd),
         ebpf_kern:call_helper(map_lookup_elem),
         ebpf_kern:jmp64_imm(eq, 0, 0, 3),
         ebpf_kern:mov64_imm(1, 1),
         ebpf_kern:stx_xadd(dw, 0, 1, 0),
         ebpf_kern:jmp_a(9),
-        ebpf_kern:ld_map_fd(1, Map),
+        ebpf_kern:ld_map_fd(1, MapFd),
         ebpf_kern:mov64_reg(2, 10),
         ebpf_kern:alu64_imm(add, 2, -4),
         ebpf_kern:st_mem(dw, 10, -16, 1),
