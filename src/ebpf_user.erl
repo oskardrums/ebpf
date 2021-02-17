@@ -151,7 +151,7 @@ verify(BpfProgramType, BpfProgramBin) ->
     {log_buffer_size, non_neg_integer()}
     | {kernel_version, non_neg_integer()}
     | {license, string()}
-]) -> {'ok', string()} | {'error', atom()} | {'error', atom(), string()}.
+]) -> 'ok' | {'ok', string()} | {'error', atom()} | {'error', atom(), string()}.
 verify(BpfProgramType, BpfProgramBin, Options) ->
     LogBufferSize = proplists:get_value(log_buffer_size, Options, 4096),
     KernelVersion = proplists:get_value(kernel_version, Options, 0),
@@ -369,7 +369,7 @@ fd(MapOrProg) -> MapOrProg.
     non_neg_integer(),
     non_neg_integer(),
     string()
-) -> {'ok', string()} | {'error', atom()} | {'error', atom(), string()}.
+) -> 'ok' | {'ok', string()} | {'error', atom()} | {'error', atom(), string()}.
 bpf_verify_program(_BpfProgramType, _BpfProgramBin, _LogBufferSize, _KernelVersion, _License) ->
     not_loaded(?LINE).
 
