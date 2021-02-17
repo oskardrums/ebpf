@@ -8,606 +8,606 @@
 /* copied from otp/erts/emulator/beam/erl_posix_str.c */
 char *
 erl_errno_id(error)
-    int error;			/* Posix error number (as from errno). */
+     int error;			/* Posix error number (as from errno). */
 {
-    switch (error) {
+  switch (error) {
 #ifdef E2BIG
-    case E2BIG: return "e2big";
+  case E2BIG: return "e2big";
 #endif
 #ifdef EACCES
-    case EACCES: return "eacces";
+  case EACCES: return "eacces";
 #endif
 #ifdef EADDRINUSE
-    case EADDRINUSE: return "eaddrinuse";
+  case EADDRINUSE: return "eaddrinuse";
 #endif
 #ifdef EADDRNOTAVAIL
-    case EADDRNOTAVAIL: return "eaddrnotavail";
+  case EADDRNOTAVAIL: return "eaddrnotavail";
 #endif
 #ifdef EADV
-    case EADV: return "eadv";
+  case EADV: return "eadv";
 #endif
 #ifdef EAFNOSUPPORT
-    case EAFNOSUPPORT: return "eafnosupport";
+  case EAFNOSUPPORT: return "eafnosupport";
 #endif
 #ifdef EAGAIN
-    case EAGAIN: return "eagain";
+  case EAGAIN: return "eagain";
 #endif
 #ifdef EALIGN
-    case EALIGN: return "ealign";
+  case EALIGN: return "ealign";
 #endif
 #if defined(EALREADY) && (!defined(EBUSY) || (EALREADY != EBUSY ))
-    case EALREADY: return "ealready";
+  case EALREADY: return "ealready";
 #endif
 #ifdef EBADE
-    case EBADE: return "ebade";
+  case EBADE: return "ebade";
 #endif
 #ifdef EBADF
-    case EBADF: return "ebadf";
+  case EBADF: return "ebadf";
 #endif
 #ifdef EBADFD
-    case EBADFD: return "ebadfd";
+  case EBADFD: return "ebadfd";
 #endif
 #ifdef EBADMSG
-    case EBADMSG: return "ebadmsg";
+  case EBADMSG: return "ebadmsg";
 #endif
 #ifdef EBADR
-    case EBADR: return "ebadr";
+  case EBADR: return "ebadr";
 #endif
 #ifdef EBADRPC
-    case EBADRPC: return "ebadrpc";
+  case EBADRPC: return "ebadrpc";
 #endif
 #ifdef EBADRQC
-    case EBADRQC: return "ebadrqc";
+  case EBADRQC: return "ebadrqc";
 #endif
 #ifdef EBADSLT
-    case EBADSLT: return "ebadslt";
+  case EBADSLT: return "ebadslt";
 #endif
 #ifdef EBFONT
-    case EBFONT: return "ebfont";
+  case EBFONT: return "ebfont";
 #endif
 #ifdef EBUSY
-    case EBUSY: return "ebusy";
+  case EBUSY: return "ebusy";
 #endif
 #ifdef ECHILD
-    case ECHILD: return "echild";
+  case ECHILD: return "echild";
 #endif
 #ifdef ECHRNG
-    case ECHRNG: return "echrng";
+  case ECHRNG: return "echrng";
 #endif
 #ifdef ECOMM
-    case ECOMM: return "ecomm";
+  case ECOMM: return "ecomm";
 #endif
 #ifdef ECONNABORTED
-    case ECONNABORTED: return "econnaborted";
+  case ECONNABORTED: return "econnaborted";
 #endif
 #ifdef ECONNREFUSED
-    case ECONNREFUSED: return "econnrefused";
+  case ECONNREFUSED: return "econnrefused";
 #endif
 #ifdef ECONNRESET
-    case ECONNRESET: return "econnreset";
+  case ECONNRESET: return "econnreset";
 #endif
 #if defined(EDEADLK) && (!defined(EWOULDBLOCK) || (EDEADLK != EWOULDBLOCK))
-    case EDEADLK: return "edeadlk";
+  case EDEADLK: return "edeadlk";
 #endif
 #if defined(EDEADLOCK) && (!defined(EDEADLK) || (EDEADLOCK != EDEADLK))
-    case EDEADLOCK: return "edeadlock";
+  case EDEADLOCK: return "edeadlock";
 #endif
 #ifdef EDESTADDRREQ
-    case EDESTADDRREQ: return "edestaddrreq";
+  case EDESTADDRREQ: return "edestaddrreq";
 #endif
 #ifdef EDIRTY
-    case EDIRTY: return "edirty";
+  case EDIRTY: return "edirty";
 #endif
 #ifdef EDOM
-    case EDOM: return "edom";
+  case EDOM: return "edom";
 #endif
 #ifdef EDOTDOT
-    case EDOTDOT: return "edotdot";
+  case EDOTDOT: return "edotdot";
 #endif
 #ifdef EDQUOT
-    case EDQUOT: return "edquot";
+  case EDQUOT: return "edquot";
 #endif
 #ifdef EDUPPKG
-    case EDUPPKG: return "eduppkg";
+  case EDUPPKG: return "eduppkg";
 #endif
 #ifdef EEXIST
-    case EEXIST: return "eexist";
+  case EEXIST: return "eexist";
 #endif
 #ifdef EFAULT
-    case EFAULT: return "efault";
+  case EFAULT: return "efault";
 #endif
 #ifdef EFTYPE
-    case EFTYPE: return "eftype";
+  case EFTYPE: return "eftype";
 #endif
 #ifdef EFBIG
-    case EFBIG: return "efbig";
+  case EFBIG: return "efbig";
 #endif
 #ifdef EHOSTDOWN
-    case EHOSTDOWN: return "ehostdown";
+  case EHOSTDOWN: return "ehostdown";
 #endif
 #ifdef EHOSTUNREACH
-    case EHOSTUNREACH: return "ehostunreach";
+  case EHOSTUNREACH: return "ehostunreach";
 #endif
 #if defined(EIDRM) && (!defined(EINPROGRESS) || (EIDRM != EINPROGRESS))
-    case EIDRM: return "eidrm";
+  case EIDRM: return "eidrm";
 #endif
 #ifdef EILSEQ
-    case EILSEQ: return "eilseq";
+  case EILSEQ: return "eilseq";
 #endif
 #ifdef EINIT
-    case EINIT: return "einit";
+  case EINIT: return "einit";
 #endif
 #ifdef EINPROGRESS
-    case EINPROGRESS: return "einprogress";
+  case EINPROGRESS: return "einprogress";
 #endif
 #ifdef EINTR
-    case EINTR: return "eintr";
+  case EINTR: return "eintr";
 #endif
 #ifdef EINVAL
-    case EINVAL: return "einval";
+  case EINVAL: return "einval";
 #endif
 #ifdef EIO
-    case EIO: return "eio";
+  case EIO: return "eio";
 #endif
 #ifdef EISCONN
-    case EISCONN: return "eisconn";
+  case EISCONN: return "eisconn";
 #endif
 #ifdef EISDIR
-    case EISDIR: return "eisdir";
+  case EISDIR: return "eisdir";
 #endif
 #ifdef EISNAME
-    case EISNAM: return "eisnam";
+  case EISNAM: return "eisnam";
 #endif
 #ifdef ELBIN
-    case ELBIN: return "elbin";
+  case ELBIN: return "elbin";
 #endif
 #ifdef EL2HLT
-    case EL2HLT: return "el2hlt";
+  case EL2HLT: return "el2hlt";
 #endif
 #ifdef EL2NSYNC
-    case EL2NSYNC: return "el2nsync";
+  case EL2NSYNC: return "el2nsync";
 #endif
 #ifdef EL3HLT
-    case EL3HLT: return "el3hlt";
+  case EL3HLT: return "el3hlt";
 #endif
 #ifdef EL3RST
-    case EL3RST: return "el3rst";
+  case EL3RST: return "el3rst";
 #endif
 #ifdef ELIBACC
-    case ELIBACC: return "elibacc";
+  case ELIBACC: return "elibacc";
 #endif
 #ifdef ELIBBAD
-    case ELIBBAD: return "elibbad";
+  case ELIBBAD: return "elibbad";
 #endif
 #ifdef ELIBEXEC
-    case ELIBEXEC: return "elibexec";
+  case ELIBEXEC: return "elibexec";
 #endif
 #ifdef ELIBMAX
-    case ELIBMAX: return "elibmax";
+  case ELIBMAX: return "elibmax";
 #endif
 #ifdef ELIBSCN
-    case ELIBSCN: return "elibscn";
+  case ELIBSCN: return "elibscn";
 #endif
 #ifdef ELNRNG
-    case ELNRNG: return "elnrng";
+  case ELNRNG: return "elnrng";
 #endif
 #if defined(ELOOP) && (!defined(ENOENT) || (ELOOP != ENOENT))
-    case ELOOP: return "eloop";
+  case ELOOP: return "eloop";
 #endif
 #ifdef EMFILE
-    case EMFILE: return "emfile";
+  case EMFILE: return "emfile";
 #endif
 #ifdef EMLINK
-    case EMLINK: return "emlink";
+  case EMLINK: return "emlink";
 #endif
 #ifdef EMSGSIZE
-    case EMSGSIZE: return "emsgsize";
+  case EMSGSIZE: return "emsgsize";
 #endif
 #ifdef EMULTIHOP
-    case EMULTIHOP: return "emultihop";
+  case EMULTIHOP: return "emultihop";
 #endif
 #ifdef ENAMETOOLONG
-    case ENAMETOOLONG: return "enametoolong";
+  case ENAMETOOLONG: return "enametoolong";
 #endif
 #ifdef ENAVAIL
-    case ENAVAIL: return "enavail";
+  case ENAVAIL: return "enavail";
 #endif
 #ifdef ENET
-    case ENET: return "enet";
+  case ENET: return "enet";
 #endif
 #ifdef ENETDOWN
-    case ENETDOWN: return "enetdown";
+  case ENETDOWN: return "enetdown";
 #endif
 #ifdef ENETRESET
-    case ENETRESET: return "enetreset";
+  case ENETRESET: return "enetreset";
 #endif
 #ifdef ENETUNREACH
-    case ENETUNREACH: return "enetunreach";
+  case ENETUNREACH: return "enetunreach";
 #endif
 #ifdef ENFILE
-    case ENFILE: return "enfile";
+  case ENFILE: return "enfile";
 #endif
 #ifdef ENOANO
-    case ENOANO: return "enoano";
+  case ENOANO: return "enoano";
 #endif
 #if defined(ENOBUFS) && (!defined(ENOSR) || (ENOBUFS != ENOSR))
-    case ENOBUFS: return "enobufs";
+  case ENOBUFS: return "enobufs";
 #endif
 #ifdef ENOCSI
-    case ENOCSI: return "enocsi";
+  case ENOCSI: return "enocsi";
 #endif
 #if defined(ENODATA) && (!defined(ECONNREFUSED) || (ENODATA != ECONNREFUSED))
-    case ENODATA: return "enodata";
+  case ENODATA: return "enodata";
 #endif
 #ifdef ENODEV
-    case ENODEV: return "enodev";
+  case ENODEV: return "enodev";
 #endif
 #ifdef ENOENT
-    case ENOENT: return "enoent";
+  case ENOENT: return "enoent";
 #endif
 #ifdef ENOEXEC
-    case ENOEXEC: return "enoexec";
+  case ENOEXEC: return "enoexec";
 #endif
 #ifdef ENOLCK
-    case ENOLCK: return "enolck";
+  case ENOLCK: return "enolck";
 #endif
 #ifdef ENOLINK
-    case ENOLINK: return "enolink";
+  case ENOLINK: return "enolink";
 #endif
 #ifdef ENOMEM
-    case ENOMEM: return "enomem";
+  case ENOMEM: return "enomem";
 #endif
 #ifdef ENOMSG
-    case ENOMSG: return "enomsg";
+  case ENOMSG: return "enomsg";
 #endif
 #ifdef ENONET
-    case ENONET: return "enonet";
+  case ENONET: return "enonet";
 #endif
 #ifdef ENOPKG
-    case ENOPKG: return "enopkg";
+  case ENOPKG: return "enopkg";
 #endif
 #ifdef ENOPROTOOPT
-    case ENOPROTOOPT: return "enoprotoopt";
+  case ENOPROTOOPT: return "enoprotoopt";
 #endif
 #ifdef ENOSPC
-    case ENOSPC: return "enospc";
+  case ENOSPC: return "enospc";
 #endif
 #if defined(ENOSR) && (!defined(ENAMETOOLONG) || (ENAMETOOLONG != ENOSR))
-    case ENOSR: return "enosr";
+  case ENOSR: return "enosr";
 #endif
 #if defined(ENOSTR) && (!defined(ENOTTY) || (ENOTTY != ENOSTR))
-    case ENOSTR: return "enostr";
+  case ENOSTR: return "enostr";
 #endif
 #ifdef ENOSYM
-    case ENOSYM: return "enosym";
+  case ENOSYM: return "enosym";
 #endif
 #ifdef ENOSYS
-    case ENOSYS: return "enosys";
+  case ENOSYS: return "enosys";
 #endif
 #ifdef ENOTBLK
-    case ENOTBLK: return "enotblk";
+  case ENOTBLK: return "enotblk";
 #endif
 #ifdef ENOTCONN
-    case ENOTCONN: return "enotconn";
+  case ENOTCONN: return "enotconn";
 #endif
 #ifdef ENOTDIR
-    case ENOTDIR: return "enotdir";
+  case ENOTDIR: return "enotdir";
 #endif
 #if defined(ENOTEMPTY) && (!defined(EEXIST) || (ENOTEMPTY != EEXIST))
-    case ENOTEMPTY: return "enotempty";
+  case ENOTEMPTY: return "enotempty";
 #endif
 #ifdef ENOTNAM
-    case ENOTNAM: return "enotnam";
+  case ENOTNAM: return "enotnam";
 #endif
 #ifdef ENOTSOCK
-    case ENOTSOCK: return "enotsock";
+  case ENOTSOCK: return "enotsock";
 #endif
 #ifdef ENOTSUP
-    case ENOTSUP: return "enotsup";
+  case ENOTSUP: return "enotsup";
 #endif
 #ifdef ENOTTY
-    case ENOTTY: return "enotty";
+  case ENOTTY: return "enotty";
 #endif
 #ifdef ENOTUNIQ
-    case ENOTUNIQ: return "enotuniq";
+  case ENOTUNIQ: return "enotuniq";
 #endif
 #ifdef ENXIO
-    case ENXIO: return "enxio";
+  case ENXIO: return "enxio";
 #endif
 #if defined(EOPNOTSUPP) && (!defined(ENOTSUP) || (EOPNOTSUPP != ENOTSUP))
-    case EOPNOTSUPP: return "eopnotsupp";
+  case EOPNOTSUPP: return "eopnotsupp";
 #endif
 #ifdef EOVERFLOW
-    case EOVERFLOW: return "eoverflow";
+  case EOVERFLOW: return "eoverflow";
 #endif
 #ifdef EPERM
-    case EPERM: return "eperm";
+  case EPERM: return "eperm";
 #endif
 #if defined(EPFNOSUPPORT) && (!defined(ENOLCK) || (ENOLCK != EPFNOSUPPORT))
-    case EPFNOSUPPORT: return "epfnosupport";
+  case EPFNOSUPPORT: return "epfnosupport";
 #endif
 #ifdef EPIPE
-    case EPIPE: return "epipe";
+  case EPIPE: return "epipe";
 #endif
 #ifdef EPROCLIM
-    case EPROCLIM: return "eproclim";
+  case EPROCLIM: return "eproclim";
 #endif
 #ifdef EPROCUNAVAIL
-    case EPROCUNAVAIL: return "eprocunavail";
+  case EPROCUNAVAIL: return "eprocunavail";
 #endif
 #ifdef EPROGMISMATCH
-    case EPROGMISMATCH: return "eprogmismatch";
+  case EPROGMISMATCH: return "eprogmismatch";
 #endif
 #ifdef EPROGUNAVAIL
-    case EPROGUNAVAIL: return "eprogunavail";
+  case EPROGUNAVAIL: return "eprogunavail";
 #endif
 #ifdef EPROTO
-    case EPROTO: return "eproto";
+  case EPROTO: return "eproto";
 #endif
 #ifdef EPROTONOSUPPORT
-    case EPROTONOSUPPORT: return "eprotonosupport";
+  case EPROTONOSUPPORT: return "eprotonosupport";
 #endif
 #ifdef EPROTOTYPE
-    case EPROTOTYPE: return "eprototype";
+  case EPROTOTYPE: return "eprototype";
 #endif
 #ifdef ERANGE
-    case ERANGE: return "erange";
+  case ERANGE: return "erange";
 #endif
 #if defined(EREFUSED) && (!defined(ECONNREFUSED) || (EREFUSED != ECONNREFUSED))
-    case EREFUSED: return "erefused";
+  case EREFUSED: return "erefused";
 #endif
 #ifdef EREMCHG
-    case EREMCHG: return "eremchg";
+  case EREMCHG: return "eremchg";
 #endif
 #ifdef EREMDEV
-    case EREMDEV: return "eremdev";
+  case EREMDEV: return "eremdev";
 #endif
 #ifdef EREMOTE
-    case EREMOTE: return "eremote";
+  case EREMOTE: return "eremote";
 #endif
 #ifdef EREMOTEIO
-    case EREMOTEIO: return "eremoteio";
+  case EREMOTEIO: return "eremoteio";
 #endif
 #ifdef EREMOTERELEASE
-    case EREMOTERELEASE: return "eremoterelease";
+  case EREMOTERELEASE: return "eremoterelease";
 #endif
 #ifdef EROFS
-    case EROFS: return "erofs";
+  case EROFS: return "erofs";
 #endif
 #ifdef ERPCMISMATCH
-    case ERPCMISMATCH: return "erpcmismatch";
+  case ERPCMISMATCH: return "erpcmismatch";
 #endif
 #ifdef ERREMOTE
-    case ERREMOTE: return "erremote";
+  case ERREMOTE: return "erremote";
 #endif
 #ifdef ESHUTDOWN
-    case ESHUTDOWN: return "eshutdown";
+  case ESHUTDOWN: return "eshutdown";
 #endif
 #ifdef ESOCKTNOSUPPORT
-    case ESOCKTNOSUPPORT: return "esocktnosupport";
+  case ESOCKTNOSUPPORT: return "esocktnosupport";
 #endif
 #ifdef ESPIPE
-    case ESPIPE: return "espipe";
+  case ESPIPE: return "espipe";
 #endif
 #ifdef ESRCH
-    case ESRCH: return "esrch";
+  case ESRCH: return "esrch";
 #endif
 #ifdef ESRMNT
-    case ESRMNT: return "esrmnt";
+  case ESRMNT: return "esrmnt";
 #endif
 #ifdef ESTALE
-    case ESTALE: return "estale";
+  case ESTALE: return "estale";
 #endif
 #ifdef ESUCCESS
-    case ESUCCESS: return "esuccess";
+  case ESUCCESS: return "esuccess";
 #endif
 #if defined(ETIME) && (!defined(ELOOP) || (ETIME != ELOOP))
-    case ETIME: return "etime";
+  case ETIME: return "etime";
 #endif
 #if defined(ETIMEDOUT) && (!defined(ENOSTR) || (ETIMEDOUT != ENOSTR)) && (!defined(EAGAIN) || (ETIMEDOUT != EAGAIN)) && (!defined(WSAETIMEDOUT) || (ETIMEDOUT != WSAETIMEDOUT))
-    case ETIMEDOUT: return "etimedout";
+  case ETIMEDOUT: return "etimedout";
 #endif
 #ifdef ETOOMANYREFS
-    case ETOOMANYREFS: return "etoomanyrefs";
+  case ETOOMANYREFS: return "etoomanyrefs";
 #endif
 #ifdef ETXTBSY
-    case ETXTBSY: return "etxtbsy";
+  case ETXTBSY: return "etxtbsy";
 #endif
 #ifdef EUCLEAN
-    case EUCLEAN: return "euclean";
+  case EUCLEAN: return "euclean";
 #endif
 #ifdef EUNATCH
-    case EUNATCH: return "eunatch";
+  case EUNATCH: return "eunatch";
 #endif
 #ifdef EUSERS
-    case EUSERS: return "eusers";
+  case EUSERS: return "eusers";
 #endif
 #ifdef EVERSION
-    case EVERSION: return "eversion";
+  case EVERSION: return "eversion";
 #endif
 #if defined(EWOULDBLOCK) && (!defined(EAGAIN) || (EWOULDBLOCK != EAGAIN)) && (!defined(WSAEWOULDBLOCK) || (EWOULDBLOCK != WSAEWOULDBLOCK))
-    case EWOULDBLOCK: return "ewouldblock";
+  case EWOULDBLOCK: return "ewouldblock";
 #endif
 #ifdef EXDEV
-    case EXDEV: return "exdev";
+  case EXDEV: return "exdev";
 #endif
 #ifdef EXFULL
-    case EXFULL: return "exfull";
+  case EXFULL: return "exfull";
 #endif
 #ifdef WSAEINTR
-    case WSAEINTR: return "eintr";
+  case WSAEINTR: return "eintr";
 #endif
 #ifdef WSAEBADF
-    case WSAEBADF: return "ebadf";
+  case WSAEBADF: return "ebadf";
 #endif
 #ifdef WSAEACCES
-    case WSAEACCES: return "eacces";
+  case WSAEACCES: return "eacces";
 #endif
 #ifdef WSAEFAULT
-    case WSAEFAULT: return "efault";
+  case WSAEFAULT: return "efault";
 #endif
 #ifdef WSAEINVAL
-    case WSAEINVAL: return "einval";
+  case WSAEINVAL: return "einval";
 #endif
 #ifdef WSAEMFILE
-    case WSAEMFILE: return "emfile";
+  case WSAEMFILE: return "emfile";
 #endif
 #ifdef WSAEWOULDBLOCK  
-    case WSAEWOULDBLOCK: return "ewouldblock";
+  case WSAEWOULDBLOCK: return "ewouldblock";
 #endif
 #ifdef WSAEINPROGRESS  
-    case WSAEINPROGRESS: return "einprogress";
+  case WSAEINPROGRESS: return "einprogress";
 #endif
 #ifdef WSAEALREADY     
-    case WSAEALREADY: return "ealready";
+  case WSAEALREADY: return "ealready";
 #endif
 #ifdef WSAENOTSOCK     
-    case WSAENOTSOCK: return "enotsock";
+  case WSAENOTSOCK: return "enotsock";
 #endif
 #ifdef WSAEDESTADDRREQ 
-    case WSAEDESTADDRREQ: return "edestaddrreq";
+  case WSAEDESTADDRREQ: return "edestaddrreq";
 #endif
 #ifdef WSAEMSGSIZE     
-    case WSAEMSGSIZE: return "emsgsize";
+  case WSAEMSGSIZE: return "emsgsize";
 #endif
 #ifdef WSAEPROTOTYPE   
-    case WSAEPROTOTYPE: return "eprototype";
+  case WSAEPROTOTYPE: return "eprototype";
 #endif
 #ifdef WSAENOPROTOOPT  
-    case WSAENOPROTOOPT: return "enoprotoopt";
+  case WSAENOPROTOOPT: return "enoprotoopt";
 #endif
 #ifdef WSAEPROTONOSUPPORT
-    case WSAEPROTONOSUPPORT: return "eprotonosupport";
+  case WSAEPROTONOSUPPORT: return "eprotonosupport";
 #endif
 #ifdef WSAESOCKTNOSUPPORT
-    case WSAESOCKTNOSUPPORT: return "esocktnosupport";
+  case WSAESOCKTNOSUPPORT: return "esocktnosupport";
 #endif
 #ifdef WSAEOPNOTSUPP   
-    case WSAEOPNOTSUPP: return "eopnotsupp";
+  case WSAEOPNOTSUPP: return "eopnotsupp";
 #endif
 #ifdef WSAEPFNOSUPPORT 
-    case WSAEPFNOSUPPORT: return "epfnosupport";
+  case WSAEPFNOSUPPORT: return "epfnosupport";
 #endif
 #ifdef WSAEAFNOSUPPORT 
-    case WSAEAFNOSUPPORT: return "eafnosupport";
+  case WSAEAFNOSUPPORT: return "eafnosupport";
 #endif
 #ifdef WSAEADDRINUSE   
-    case WSAEADDRINUSE: return "eaddrinuse";
+  case WSAEADDRINUSE: return "eaddrinuse";
 #endif
 #ifdef WSAEADDRNOTAVAIL
-    case WSAEADDRNOTAVAIL: return "eaddrnotavail";
+  case WSAEADDRNOTAVAIL: return "eaddrnotavail";
 #endif
 #ifdef WSAENETDOWN    
-    case WSAENETDOWN: return "enetdown";
+  case WSAENETDOWN: return "enetdown";
 #endif
 #ifdef WSAENETUNREACH 
-    case WSAENETUNREACH: return "enetunreach";
+  case WSAENETUNREACH: return "enetunreach";
 #endif
 #ifdef WSAENETRESET   
-    case WSAENETRESET: return "enetreset";
+  case WSAENETRESET: return "enetreset";
 #endif
 #ifdef WSAECONNABORTED
-    case WSAECONNABORTED: return "econnaborted";
+  case WSAECONNABORTED: return "econnaborted";
 #endif
 #ifdef WSAECONNRESET  
-    case WSAECONNRESET: return "econnreset";
+  case WSAECONNRESET: return "econnreset";
 #endif
 #ifdef WSAENOBUFS     
-    case WSAENOBUFS: return "enobufs";
+  case WSAENOBUFS: return "enobufs";
 #endif
 #ifdef WSAEISCONN     
-    case WSAEISCONN: return "eisconn";
+  case WSAEISCONN: return "eisconn";
 #endif
 #ifdef WSAENOTCONN    
-    case WSAENOTCONN: return "enotconn";
+  case WSAENOTCONN: return "enotconn";
 #endif
 #ifdef WSAESHUTDOWN   
-    case WSAESHUTDOWN: return "eshutdown";
+  case WSAESHUTDOWN: return "eshutdown";
 #endif
 #ifdef WSAETOOMANYREFS
-    case WSAETOOMANYREFS: return "etoomanyrefs";
+  case WSAETOOMANYREFS: return "etoomanyrefs";
 #endif
 #ifdef WSAETIMEDOUT   
-    case WSAETIMEDOUT: return "etimedout";
+  case WSAETIMEDOUT: return "etimedout";
 #endif
 #ifdef WSAECONNREFUSED
-    case WSAECONNREFUSED: return "econnrefused";
+  case WSAECONNREFUSED: return "econnrefused";
 #endif
 #ifdef WSAELOOP
-    case WSAELOOP: return "eloop";
+  case WSAELOOP: return "eloop";
 #endif
 #ifdef WSAENAMETOOLONG
-    case WSAENAMETOOLONG: return "enametoolong";
+  case WSAENAMETOOLONG: return "enametoolong";
 #endif
 #ifdef WSAEHOSTDOWN
-    case WSAEHOSTDOWN: return "ehostdown";
+  case WSAEHOSTDOWN: return "ehostdown";
 #endif
 #ifdef WSAEHOSTUNREACH
-    case WSAEHOSTUNREACH: return "ehostunreach";
+  case WSAEHOSTUNREACH: return "ehostunreach";
 #endif
 #ifdef WSAENOTEMPTY
-    case WSAENOTEMPTY: return "enotempty";
+  case WSAENOTEMPTY: return "enotempty";
 #endif
 #ifdef WSAEPROCLIM
-    case WSAEPROCLIM: return "eproclim";
+  case WSAEPROCLIM: return "eproclim";
 #endif
 #ifdef WSAEUSERS
-    case WSAEUSERS: return "eusers";
+  case WSAEUSERS: return "eusers";
 #endif
 #ifdef WSAEDQUOT
-    case WSAEDQUOT: return "edquot";
+  case WSAEDQUOT: return "edquot";
 #endif
 #ifdef WSAESTALE
-    case WSAESTALE: return "estale";
+  case WSAESTALE: return "estale";
 #endif
 #ifdef WSAEREMOTE
-    case WSAEREMOTE: return "eremote";
+  case WSAEREMOTE: return "eremote";
 #endif
 #ifdef WSASYSNOTREADY
-    case WSASYSNOTREADY: return "sysnotready";
+  case WSASYSNOTREADY: return "sysnotready";
 #endif
 #ifdef WSAVERNOTSUPPORTED
-    case WSAVERNOTSUPPORTED: return "vernotsupported";
+  case WSAVERNOTSUPPORTED: return "vernotsupported";
 #endif
 #ifdef WSANOTINITIALISED
-    case WSANOTINITIALISED: return "notinitialised";
+  case WSANOTINITIALISED: return "notinitialised";
 #endif
 #ifdef WSAEDISCON
-    case WSAEDISCON: return "ediscon";
+  case WSAEDISCON: return "ediscon";
 #endif
 #ifdef WSAENOMORE
-    case WSAENOMORE: return "enomore";
+  case WSAENOMORE: return "enomore";
 #endif
 #ifdef WSAECANCELLED
-    case WSAECANCELLED: return "ecancelled";
+  case WSAECANCELLED: return "ecancelled";
 #endif
 #ifdef WSAEINVALIDPROCTABLE
-    case WSAEINVALIDPROCTABLE: return "einvalidproctable";
+  case WSAEINVALIDPROCTABLE: return "einvalidproctable";
 #endif
 #ifdef WSAEINVALIDPROVIDER
-    case WSAEINVALIDPROVIDER: return "einvalidprovider";
+  case WSAEINVALIDPROVIDER: return "einvalidprovider";
 #endif
 #ifdef WSAEPROVIDERFAILEDINIT
-      /* You could get this if SYSTEMROOT env variable is set incorrectly */
-    case WSAEPROVIDERFAILEDINIT: return "eproviderfailedinit";
+    /* You could get this if SYSTEMROOT env variable is set incorrectly */
+  case WSAEPROVIDERFAILEDINIT: return "eproviderfailedinit";
 #endif
 #ifdef WSASYSCALLFAILURE
-    case WSASYSCALLFAILURE: return "syscallfailure";
+  case WSASYSCALLFAILURE: return "syscallfailure";
 #endif
 #ifdef WSASERVICE_NOT_FOUND
-    case WSASERVICE_NOT_FOUND: return "service_not_found";
+  case WSASERVICE_NOT_FOUND: return "service_not_found";
 #endif
 #ifdef WSATYPE_NOT_FOUND
-    case WSATYPE_NOT_FOUND: return "type_not_found";
+  case WSATYPE_NOT_FOUND: return "type_not_found";
 #endif
 #ifdef WSA_E_NO_MORE
-    case WSA_E_NO_MORE: return "e_no_more";
+  case WSA_E_NO_MORE: return "e_no_more";
 #endif
 #ifdef WSA_E_CANCELLED
-    case WSA_E_CANCELLED: return "e_cancelled";
+  case WSA_E_CANCELLED: return "e_cancelled";
 #endif
-    }
-    return "unknown";
+  }
+  return "unknown";
 }
 
 ERL_NIF_TERM
@@ -695,15 +695,37 @@ ebpf_load_program(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ERL_NIF_TERM
+ebpf__verify_program_no_log(ErlNifEnv* env, int type, ErlNifBinary* bin, uint32_t kernel_version, const char * license)
+{
+  int res = bpf_verify_program(type,
+			       (const struct bpf_insn *) bin->data,
+			       bin->size / 8,
+			       0,
+			       license,
+			       kernel_version,
+			       NULL,
+			       0,
+			       0);
+  if (res < 0)
+    {
+      return mk_error(env, erl_errno_id(errno));
+    }
+  else
+    {
+      close(res);
+      return mk_atom(env, "ok");
+    }
+}
+
+static ERL_NIF_TERM
 ebpf__verify_program(ErlNifEnv* env, int type, ErlNifBinary * bin, char * buf, size_t buf_size, uint32_t kernel_version, const char * license)
 {
   int res = -1;
   int log_level = 1;
 
-  if (buf == NULL)
+  if (buf_size == 0)
     {
-      buf_size = 0;
-      log_level = 0;
+      return ebpf__verify_program_no_log(env, type, bin, kernel_version, license);
     }
 
   res = bpf_verify_program(type,
@@ -717,20 +739,23 @@ ebpf__verify_program(ErlNifEnv* env, int type, ErlNifBinary * bin, char * buf, s
 			   log_level);
   if (res < 0)
     {
-      if (errno == EACCES || errno == EINVAL)
+      switch (errno)
 	{
+	case EACCES:
+	case EINVAL:
+	case ENOSPC:
+	case EBADF:
 	  return enif_make_tuple3(env,
 				  mk_atom(env, "error"),
 				  mk_atom(env, erl_errno_id(errno)),
 				  enif_make_string(env, buf, ERL_NIF_LATIN1));
-	}
-      else
-	{
+	default:
 	  return mk_error(env, erl_errno_id(errno));
 	}
     }
   else
     {
+      close(res);
       return enif_make_tuple2(env, mk_atom(env, "ok"), enif_make_string(env, buf, ERL_NIF_LATIN1));
     }
 }
@@ -777,18 +802,17 @@ ebpf_verify_program5(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     {
       return enif_make_badarg(env);
     }
-  
-  buf = (char *) malloc (buf_size);
-
-  if(buf == NULL)
+  if(buf_size > 0)
     {
-      return mk_error(env, erl_errno_id(errno));
+      buf = (char *) malloc (buf_size);
+
+      if(buf == NULL)
+	{
+	  return mk_error(env, erl_errno_id(errno));
+	}
+      memset(buf, 0, buf_size);
     }
-
-  memset(buf, 0, buf_size);
-
   res = ebpf__verify_program(env, type, &bin, buf, buf_size, kernel_version, license);
-
   if (buf)
     {
       free(buf);
@@ -868,10 +892,10 @@ ebpf_create_map5(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
 
   if(!enif_get_int( env, argv[0], &map_type)
-  || !enif_get_int( env, argv[1], &key_size)
-  || !enif_get_int( env, argv[2], &value_size)
-  || !enif_get_int( env, argv[3], &max_entries)
-  || !enif_get_uint(env, argv[4], &map_flags))
+     || !enif_get_int( env, argv[1], &key_size)
+     || !enif_get_int( env, argv[2], &value_size)
+     || !enif_get_int( env, argv[3], &max_entries)
+     || !enif_get_uint(env, argv[4], &map_flags))
     {
       return enif_make_badarg(env);
     }
@@ -929,9 +953,9 @@ ebpf_update_map_element4(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
 
   if(!enif_get_int(       env, argv[0], &fd   )
-  || !enif_inspect_binary(env, argv[1], &key  )
-  || !enif_inspect_binary(env, argv[2], &value)
-  || !enif_get_uint64(    env, argv[3], (unsigned long *)&flags))
+     || !enif_inspect_binary(env, argv[1], &key  )
+     || !enif_inspect_binary(env, argv[2], &value)
+     || !enif_get_uint64(    env, argv[3], (unsigned long *)&flags))
     {
       return enif_make_badarg(env);
     }
@@ -952,7 +976,7 @@ ebpf_lookup_map_element4(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
   ErlNifBinary key = {0,};
   ERL_NIF_TERM value = {0,};
   int value_size = 0;
-    __u64 flags = 0;
+  __u64 flags = 0;
 
   int res = -1;
 
@@ -962,9 +986,9 @@ ebpf_lookup_map_element4(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
 
   if(!enif_get_int(       env, argv[0], &fd   )
-  || !enif_inspect_binary(env, argv[1], &key  )
-  || !enif_get_int(       env, argv[2], &value_size)
-  || !enif_get_uint64(    env, argv[3], (unsigned long *)&flags))
+     || !enif_inspect_binary(env, argv[1], &key  )
+     || !enif_get_int(       env, argv[2], &value_size)
+     || !enif_get_uint64(    env, argv[3], (unsigned long *)&flags))
     {
       return enif_make_badarg(env);
     }
@@ -992,7 +1016,7 @@ ebpf_delete_map_element2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
 
   if(!enif_get_int(       env, argv[0], &fd   )
-  || !enif_inspect_binary(env, argv[1], &key  ))
+     || !enif_inspect_binary(env, argv[1], &key  ))
     {
       return enif_make_badarg(env);
     }
@@ -1021,7 +1045,7 @@ ebpf_get_map_next_key2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
 
   if(!enif_get_int(       env, argv[0], &fd   )
-  || !enif_inspect_binary(env, argv[1], &key  ))
+     || !enif_inspect_binary(env, argv[1], &key  ))
     {
       return enif_make_badarg(env);
     }
@@ -1055,9 +1079,9 @@ ebpf_test_program4(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
 
   if(!enif_get_int(       env, argv[0], &prog_fd)
-  || !enif_get_int(       env, argv[1], &repeat)
-  || !enif_inspect_binary(env, argv[2], &data   )
-  || !enif_get_uint(      env, argv[3], &data_out_size))
+     || !enif_get_int(       env, argv[1], &repeat)
+     || !enif_inspect_binary(env, argv[2], &data   )
+     || !enif_get_uint(      env, argv[3], &data_out_size))
     {
       return enif_make_badarg(env);
     }

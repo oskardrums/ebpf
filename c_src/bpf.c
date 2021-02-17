@@ -379,7 +379,6 @@ int bpf_verify_program(enum bpf_prog_type type, const struct bpf_insn *insns,
 	attr.log_buf = ptr_to_u64(log_buf);
 	attr.log_size = log_buf_sz;
 	attr.log_level = log_level;
-	log_buf[0] = 0;
 	attr.kern_version = kern_version;
 	attr.prog_flags = prog_flags;
 
