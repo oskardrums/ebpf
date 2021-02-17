@@ -59,6 +59,8 @@ Creates a new eBPF map.</td></tr>
   Deletes the value associated with Key in eBPF map Map.</td></tr>
 <tr><td valign="top"><a href="#detach_socket_filter-1">detach_socket_filter/1</a></td><td>
   Removes the eBPF program attached to <code>SockFd</code>.</td></tr>
+<tr><td valign="top"><a href="#fd-1">fd/1</a></td><td>  
+Returns a File Descriptor for eBPF program or map.</td></tr>
 <tr><td valign="top"><a href="#get_map_next_key-2">get_map_next_key/2</a></td><td>  
 Retries the next key after Key in the eBPF map Map.</td></tr>
 <tr><td valign="top"><a href="#load-2">load/2</a></td><td>  
@@ -126,6 +128,15 @@ Creates a new eBPF map.</p>
 <p> </p>
 </div><p>
   Removes the eBPF program attached to <code>SockFd</code>.</p>
+
+<h3 class="function"><a name="fd-1">fd/1</a></h3>
+<div class="spec">
+<p><tt>fd(MapOrProg::<a href="#type-bpf_map">bpf_map()</a> | <a href="#type-bpf_prog">bpf_prog()</a>) -&gt; non_neg_integer() | {error, atom()}</tt><br></p>
+<p> </p>
+</div><p><p>  
+Returns a File Descriptor for eBPF program or map.</p>
+ 
+  Can be used for passing a map to eBPF programs, e.g. via <a href="ebpf_kern.html#ld_map_fd-2"><code>ebpf_kern:ld_map_fd/2</code></a>.</p>
 
 <h3 class="function"><a name="get_map_next_key-2">get_map_next_key/2</a></h3>
 <div class="spec">
