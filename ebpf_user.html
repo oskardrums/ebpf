@@ -208,7 +208,7 @@ Hence the warning.</p>
 
 <h3 class="function"><a name="verify-3">verify/3</a></h3>
 <div class="spec">
-<p><tt>verify(BpfProgramType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, BpfProgramBin::binary(), Options::[{log_buffer_size, non_neg_integer()} | {kernel_version, non_neg_integer()} | {license, string()}]) -&gt; {ok, string()} | {error, atom()} | {error, atom(), string()}</tt><br></p>
+<p><tt>verify(BpfProgramType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, BpfProgramBin::binary(), Options::[{log_buffer_size, non_neg_integer()} | {kernel_version, non_neg_integer()} | {license, string()}]) -&gt; ok | {ok, string()} | {error, atom()} | {error, atom(), string()}</tt><br></p>
 <p> </p>
 </div><p><p>  
 Verifies an eBPF program in binary form with the kernel's verifier.</p>
