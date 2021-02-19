@@ -110,10 +110,10 @@
 -opaque bpf_map() :: integer().
 %% An open eBPF map as returned by {@link create_map/4}.
 
--opaque bpf_prog() :: integer().
+-opaque prog() :: integer().
 %% A loaded eBPF program as returned by {@link load/2}.
 
--export_type([bpf_map/0, bpf_prog/0]).
+-export_type([bpf_map/0, prog/0]).
 
 %%%===================================================================
 %%% API
@@ -176,7 +176,7 @@ verify(ProgType, ProgBin, Options) ->
 %% verified via {@link verify/2} for an informative error description.
 %% @end
 %%--------------------------------------------------------------------
--spec load(bpf_prog_type(), binary()) -> {'ok', bpf_prog()} | {'error', atom()}.
+-spec load(bpf_prog_type(), binary()) -> {'ok', prog()} | {'error', atom()}.
 load(ProgType, ProgBin) ->
     bpf_load_program(
         bpf_prog_type_to_int(ProgType),
@@ -204,7 +204,7 @@ load(ProgType, ProgBin) ->
 %% and the duration of the test as reported by the kernel.
 %% @end
 %%--------------------------------------------------------------------
--spec test_program(bpf_prog(), integer(), binary(), non_neg_integer()) ->
+-spec test_program(prog(), integer(), binary(), non_neg_integer()) ->
     {'ok', Ret :: non_neg_integer(), DataOut :: binary(), Duration :: non_neg_integer()}
     | {'error', atom()}.
 test_program(Prog, Repeat, Data, DataOutSize) ->
@@ -308,7 +308,7 @@ get_map_next_key(Map, Key) ->
 %% `socket_filter' as `ProgType' to a socket.
 %% @end
 %%--------------------------------------------------------------------
--spec attach_socket_filter(socket:socket(), bpf_prog()) -> 'ok' | {'error', atom()}.
+-spec attach_socket_filter(socket:socket(), prog()) -> 'ok' | {'error', atom()}.
 attach_socket_filter(Sock, Prog) ->
     {ok, SockFd} = socket:getopt(Sock, otp, fd),
     bpf_attach_socket_filter(
@@ -332,7 +332,7 @@ detach_socket_filter(Sock) ->
 %% with `xdp' a `ProgType' to a network interface.
 %% @end
 %%--------------------------------------------------------------------
--spec attach_xdp(string() | non_neg_integer(), bpf_prog()) -> 'ok' | {'error', atom()}.
+-spec attach_xdp(string() | non_neg_integer(), prog()) -> 'ok' | {'error', atom()}.
 attach_xdp(Interface, Prog) when is_integer(Interface) ->
     % Interface is an interface index
     bpf_attach_xdp(Interface, Prog);
@@ -358,7 +358,7 @@ detach_xdp(Interface) when is_list(Interface) ->
 %% Closes an eBPF map or program.
 %% @end
 %%--------------------------------------------------------------------
--spec close(bpf_map() | bpf_prog()) -> 'ok' | {'error', atom()}.
+-spec close(bpf_map() | prog()) -> 'ok' | {'error', atom()}.
 close(ProgOrMap) ->
     bpf_close(ProgOrMap).
 
@@ -369,7 +369,7 @@ close(ProgOrMap) ->
 %% Can be used for passing a map to eBPF programs, e.g. via {@link ebpf_kern:ld_map_fd/2}.
 %% @end
 %%--------------------------------------------------------------------
--spec fd(bpf_map() | bpf_prog()) -> non_neg_integer() | {'error', atom()}.
+-spec fd(bpf_map() | prog()) -> non_neg_integer() | {'error', atom()}.
 fd(ProgOrMap) -> ProgOrMap.
 
 %%%===================================================================
@@ -430,7 +430,7 @@ bpf_delete_map_element(_Map, _Key) ->
 bpf_get_map_next_key(_Map, _Key) ->
     not_loaded(?LINE).
 
--spec bpf_test_program(bpf_prog(), integer(), binary(), non_neg_integer()) ->
+-spec bpf_test_program(prog(), integer(), binary(), non_neg_integer()) ->
     {'ok', non_neg_integer(), binary(), non_neg_integer()} | {'error', atom()}.
 bpf_test_program(_Prog, _Repeat, _Data, _DataOutSize) ->
     not_loaded(?LINE).
