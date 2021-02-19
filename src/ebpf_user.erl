@@ -30,6 +30,7 @@
     attach_socket_filter/2,
     detach_socket_filter/1,
     attach_xdp/2,
+    detach_xdp/1,
     close/1,
     fd/1
 ]).
@@ -402,7 +403,7 @@ bpf_attach_socket_filter(_SockFd, _ProgFd) ->
 bpf_detach_socket_filter(_SockFd) ->
     not_loaded(?LINE).
 
--spec bpf_attach_xdp(non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', atom()}.
+-spec bpf_attach_xdp(non_neg_integer(), integer()) -> 'ok' | {'error', atom()}.
 bpf_attach_xdp(_IfIndex, _ProgFd) ->
     not_loaded(?LINE).
 
