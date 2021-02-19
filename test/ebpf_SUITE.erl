@@ -317,7 +317,7 @@ test_user_test_program_1(_Config) ->
         )
     of
         {ok, Prog} ->
-            {ok, 16#FFFFFFFF, Data, _Duration} = ebpf_user:test_program(
+            {ok, 16#FFFFFFFF, Data, _Duration} = ebpf_user:test(
                 Prog,
                 128,
                 Data,
@@ -349,7 +349,7 @@ test_user_test_program_2(_Config) ->
         )
     of
         {ok, Prog} ->
-            {ok, 16#FFFFFFFF, <<>>, _Duration} = ebpf_user:test_program(Prog, 128, Data, 0);
+            {ok, 16#FFFFFFFF, <<>>, _Duration} = ebpf_user:test(Prog, 128, Data, 0);
         {error, eperm} ->
             {skip, eperm};
         Other ->

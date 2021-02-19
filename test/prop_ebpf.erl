@@ -36,8 +36,8 @@ prop_kern_exit_returns_given_value() ->
                 xdp,
                 ebpf_asm:assemble([ebpf_kern:mov64_imm(0, Val), ebpf_kern:exit_insn()])
             ),
-            {ok, Val, Data, _Duration1} = ebpf_user:test_program(Prog, 1, Data, byte_size(Data)),
-            {ok, Val, <<>>, _Duration2} = ebpf_user:test_program(Prog, 1, Data, 0),
+            {ok, Val, Data, _Duration1} = ebpf_user:test(Prog, 1, Data, byte_size(Data)),
+            {ok, Val, <<>>, _Duration2} = ebpf_user:test(Prog, 1, Data, 0),
             ok = ebpf_user:close(Prog),
             true
         end

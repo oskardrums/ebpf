@@ -19,7 +19,7 @@
 %% API
 -export([
     load/2,
-    test_program/4,
+    test/4,
     verify/2,
     verify/3,
     create_map/5,
@@ -192,22 +192,22 @@ load(ProgType, ProgBin) ->
 %% is unfortunately inherently unsafe if not used correctly. The way
 %% `BPF_PROG_TEST_RUN' works is that the kernel will write `DataOut',
 %% created by applying `Prog' to `Data', into a userspace buffer of some
-%% predetermined size, exposed in this function as DataOutSize.
+%% predetermined size, exposed in this function as `DataOutSize'.
 %% In most cases this is fine because Prog shouldn't create extensively large
-%% DataOut in normal use case, but in case where Prog might create an
+%% `DataOut' in normal use case, but in case where Prog might create an
 %% output that is larger DataOutSize, this can lead to buffer overflow.
 %% Hence the warning.
 %%
-%% If `DataOut' is not needed, `DataOutSize' can be safely set to `0'.
+%% If `DataOut' is not needed, `DataOutSize' should be set to `0' in which case no `DataOut' will be created.
 %%
 %% On success, returns the return value of `Prog(Data)', as well as `DataOut'
 %% and the duration of the test as reported by the kernel.
 %% @end
 %%--------------------------------------------------------------------
--spec test_program(prog(), integer(), binary(), non_neg_integer()) ->
+-spec test(prog(), integer(), binary(), non_neg_integer()) ->
     {'ok', Ret :: non_neg_integer(), DataOut :: binary(), Duration :: non_neg_integer()}
     | {'error', atom()}.
-test_program(Prog, Repeat, Data, DataOutSize) ->
+test(Prog, Repeat, Data, DataOutSize) ->
     bpf_test_program(
         Prog,
         Repeat,
