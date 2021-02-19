@@ -125,8 +125,8 @@
 %%--------------------------------------------------------------------
 -spec verify(bpf_prog_type(), binary()) ->
     {'ok', string()} | {'error', atom()} | {'error', atom(), string()}.
-verify(BpfProgramType, BpfProgramBin) ->
-    verify(BpfProgramType, BpfProgramBin, []).
+verify(ProgType, ProgBin) ->
+    verify(ProgType, ProgBin, []).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -152,13 +152,13 @@ verify(BpfProgramType, BpfProgramBin) ->
     | {kernel_version, non_neg_integer()}
     | {license, string()}
 ]) -> 'ok' | {'ok', string()} | {'error', atom()} | {'error', atom(), string()}.
-verify(BpfProgramType, BpfProgramBin, Options) ->
+verify(ProgType, ProgBin, Options) ->
     LogBufferSize = proplists:get_value(log_buffer_size, Options, 4096),
     KernelVersion = proplists:get_value(kernel_version, Options, 0),
     License = proplists:get_value(license, Options, "GPL"),
     bpf_verify_program(
-        bpf_prog_type_to_int(BpfProgramType),
-        BpfProgramBin,
+        bpf_prog_type_to_int(ProgType),
+        ProgBin,
         LogBufferSize,
         KernelVersion,
         License
@@ -171,15 +171,15 @@ verify(BpfProgramType, BpfProgramBin, Options) ->
 %% The program is verified by the kernel's verifier before returning
 %% a handle to the loaded program to the caller.
 %%
-%% If the an error is returned by this function, BpfProgramBin can be
+%% If the an error is returned by this function, ProgBin can be
 %% verified via {@link verify/2} for an informative error description.
 %% @end
 %%--------------------------------------------------------------------
 -spec load(bpf_prog_type(), binary()) -> {'ok', bpf_prog()} | {'error', atom()}.
-load(BpfProgramType, BpfProgramBin) ->
+load(ProgType, ProgBin) ->
     bpf_load_program(
-        bpf_prog_type_to_int(BpfProgramType),
-        BpfProgramBin
+        bpf_prog_type_to_int(ProgType),
+        ProgBin
     ).
 
 %%--------------------------------------------------------------------
@@ -304,37 +304,53 @@ get_map_next_key(Map, Key) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Applies a loaded eBPF program as returned by {@link load/2} with
-%% `socket_filter' as `BpfProgramType' to a socket.
+%% `socket_filter' as `ProgType' to a socket.
 %% @end
 %%--------------------------------------------------------------------
--spec attach_socket_filter(non_neg_integer(), bpf_prog()) -> 'ok' | {'error', atom()}.
-attach_socket_filter(SockFd, ProgFd) ->
+-spec attach_socket_filter(socket:socket(), bpf_prog()) -> 'ok' | {'error', atom()}.
+attach_socket_filter(Sock, Prog) ->
+    {ok, SockFd} = socket:getopt(Sock, otp, fd),
     bpf_attach_socket_filter(
         SockFd,
-        ProgFd
+        Prog
     ).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Removes the eBPF program attached to `SockFd'.
+%% Removes the eBPF program attached to socket `Sock'.
 %% @end
 %%--------------------------------------------------------------------
--spec detach_socket_filter(non_neg_integer()) -> 'ok' | {'error', atom()}.
-detach_socket_filter(SockFd) ->
+-spec detach_socket_filter(socket:socket()) -> 'ok' | {'error', atom()}.
+detach_socket_filter(Sock) ->
+    {ok, SockFd} = socket:getopt(Sock, otp, fd),
     bpf_detach_socket_filter(SockFd).
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Applies a loaded eBPF XDP program as returned by {@link load/2}
-%% with `xdp' a `BpfProgramType' to a network interface.
+%% with `xdp' a `ProgType' to a network interface.
 %% @end
 %%--------------------------------------------------------------------
 -spec attach_xdp(string() | non_neg_integer(), bpf_prog()) -> 'ok' | {'error', atom()}.
-attach_xdp(IfIndex, ProgFd) when is_integer(IfIndex) ->
-    bpf_attach_xdp(IfIndex, ProgFd);
-attach_xdp(IfName, ProgFd) when is_list(IfName) ->
-    {ok, IfIndex} = net:if_name2index(IfName),
-    bpf_attach_xdp(IfIndex, ProgFd).
+attach_xdp(Interface, Prog) when is_integer(Interface) ->
+    % Interface is an interface index
+    bpf_attach_xdp(Interface, Prog);
+attach_xdp(Interface, Prog) when is_list(Interface) ->
+    % Interface is an interface name
+    {ok, IfIndex} = net:if_name2index(Interface),
+    bpf_attach_xdp(IfIndex, Prog).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Removes the attached eBPF XDP program from a network interface.
+%% @end
+%%--------------------------------------------------------------------
+-spec detach_xdp(string() | non_neg_integer()) -> 'ok' | {'error', atom()}.
+detach_xdp(Interface) when is_integer(Interface) ->
+    bpf_attach_xdp(Interface, -1);
+detach_xdp(Interface) when is_list(Interface) ->
+    {ok, IfIndex} = net:if_name2index(Interface),
+    bpf_attach_xdp(IfIndex, -1).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -342,8 +358,8 @@ attach_xdp(IfName, ProgFd) when is_list(IfName) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec close(bpf_map() | bpf_prog()) -> 'ok' | {'error', atom()}.
-close(Fd) ->
-    bpf_close(Fd).
+close(ProgOrMap) ->
+    bpf_close(ProgOrMap).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -353,7 +369,7 @@ close(Fd) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec fd(bpf_map() | bpf_prog()) -> non_neg_integer() | {'error', atom()}.
-fd(MapOrProg) -> MapOrProg.
+fd(ProgOrMap) -> ProgOrMap.
 
 %%%===================================================================
 %%% Internal functions
@@ -370,12 +386,12 @@ fd(MapOrProg) -> MapOrProg.
     non_neg_integer(),
     string()
 ) -> 'ok' | {'ok', string()} | {'error', atom()} | {'error', atom(), string()}.
-bpf_verify_program(_BpfProgramType, _BpfProgramBin, _LogBufferSize, _KernelVersion, _License) ->
+bpf_verify_program(_ProgType, _ProgBin, _LogBufferSize, _KernelVersion, _License) ->
     not_loaded(?LINE).
 
 -spec bpf_load_program(non_neg_integer(), binary()) ->
     {'ok', non_neg_integer()} | {'error', atom()}.
-bpf_load_program(_BpfProgramType, _BpfProgramBin) ->
+bpf_load_program(_ProgType, _ProgBin) ->
     not_loaded(?LINE).
 
 -spec bpf_attach_socket_filter(non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', atom()}.
