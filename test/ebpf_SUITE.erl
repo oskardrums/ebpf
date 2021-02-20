@@ -177,6 +177,8 @@ groups() ->
             test_user_test_program_1,
             test_user_test_program_2,
             simple_socket_filter_1,
+            simple_xdp_1,
+            readme_example_1,
             test_verify_2_cf_ttl_1,
             test_verify_3_cf_ttl_1
         ]}
@@ -240,7 +242,7 @@ simple_socket_filter_1() ->
 %% @end
 %%--------------------------------------------------------------------
 simple_socket_filter_1(_Config) ->
-    {ok, ProgFd} = ebpf_user:load(
+    {ok, Prog} = ebpf_user:load(
         socket_filter,
         ebpf_asm:assemble([
             % R0 = 0
@@ -249,10 +251,53 @@ simple_socket_filter_1(_Config) ->
             ebpf_kern:exit_insn()
         ])
     ),
-    {ok, S} = socket:open(inet, stream, {raw, 0}),
-    {ok, SockFd} = socket:getopt(S, otp, fd),
-    ok = ebpf_user:attach_socket_filter(SockFd, ProgFd),
-    ok = ebpf_user:detach_socket_filter(SockFd).
+    {ok, Sock} = socket:open(inet, stream, {raw, 0}),
+    ok = ebpf_user:attach_socket_filter(Sock, Prog),
+    ok = ebpf_user:detach_socket_filter(Sock),
+    ok = ebpf_user:close(Prog),
+    ok = socket:close(Sock).
+
+simple_xdp_1() -> [].
+simple_xdp_1(_Config) ->
+    {ok, Prog} = ebpf_user:load(
+        xdp,
+        ebpf_asm:assemble([
+            % R0 = 0
+            ebpf_kern:mov64_imm(0, 0),
+            % return R0
+            ebpf_kern:exit_insn()
+        ])
+    ),
+    ok = ebpf_user:attach_xdp("lo", Prog),
+    ok = ebpf_user:detach_xdp("lo"),
+    ok = ebpf_user:close(Prog).
+
+readme_example_1() -> [].
+readme_example_1(_Config) ->
+    BinProg = ebpf_asm:assemble([
+        % Drop all packets
+
+        % r0 = 0
+        ebpf_kern:mov64_imm(0, 0),
+        % return r0
+        ebpf_kern:exit_insn()
+    ]),
+    {ok, FilterProg} = ebpf_user:load(socket_filter, BinProg),
+    {ok, Sock} = socket:open(inet, stream, {raw, 0}),
+    % All new input to Sock is
+    ok = ebpf_user:attach_socket_filter(Sock, FilterProg),
+    % Sock is back to normal and FilterProg can be
+    ok = ebpf_user:detach_socket_filter(Sock),
+
+    % FilterProg is unloaded from the kernel
+    ok = ebpf_user:close(FilterProg),
+
+    {ok, XdpProg} = ebpf_user:load(xdp, BinProg),
+    % Try pinging 127.0.0.1, go ahead
+    ok = ebpf_user:attach_xdp("lo", XdpProg),
+    % Now, that's better :)
+    ok = ebpf_user:detach_xdp("lo"),
+    ok = ebpf_user:close(XdpProg).
 
 test_user_create_map_hash_1() -> [].
 test_user_create_map_hash_1(_Config) ->
@@ -300,7 +345,7 @@ test_user_test_program_1(_Config) ->
         )
     of
         {ok, Prog} ->
-            {ok, 16#FFFFFFFF, Data, _Duration} = ebpf_user:test_program(
+            {ok, 16#FFFFFFFF, Data, _Duration} = ebpf_user:test(
                 Prog,
                 128,
                 Data,
@@ -332,7 +377,7 @@ test_user_test_program_2(_Config) ->
         )
     of
         {ok, Prog} ->
-            {ok, 16#FFFFFFFF, <<>>, _Duration} = ebpf_user:test_program(Prog, 128, Data, 0);
+            {ok, 16#FFFFFFFF, <<>>, _Duration} = ebpf_user:test(Prog, 128, Data, 0);
         {error, eperm} ->
             {skip, eperm};
         Other ->
