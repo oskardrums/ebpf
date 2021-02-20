@@ -36,21 +36,21 @@ Interactions with the eBPF system</p>
 <p><tt>bpf_map_type() = unspec | hash | array | prog_array | perf_event_array | percpu_hash | percpu_array | stack_trace | cgroup_array | lru_hash | lru_percpu_hash | lpm_trie | array_of_maps | hash_of_maps | devmap | sockmap | cpumap | xskmap | sockhash | cgroup_storage | reuseport_sockarray | percpu_cgroup_storage | queue | stack | sk_storage | devmap_hash | struct_ops | ringbuf | inode_storage | task_storage</tt></p>
 <p>  An <code>atom</code> used to specify the type of an eBPF map, see <a href="#create_map-4"><code>create_map/4</code></a></p>
 
-<h3 class="typedecl"><a name="type-bpf_prog">bpf_prog()</a></h3>
-<p><b>abstract datatype</b>: <tt>bpf_prog()</tt></p>
-<p>  A loaded eBPF program as returned by <a href="#load-2"><code>load/2</code></a>.</p>
-
 <h3 class="typedecl"><a name="type-bpf_prog_type">bpf_prog_type()</a></h3>
 <p><tt>bpf_prog_type() = unspec | socket_filter | kprobe | sched_cls | sched_act | tracepoint | xdp | perf_event | cgroup_skb | cgroup_sock | lwt_in | lwt_out | lwt_xmit | sock_ops | sk_skb | cgroup_device | sk_msg | raw_tracepoint | cgroup_sock_addr | lwt_seg6local | lirc_mode2 | sk_reuseport | flow_dissector | cgroup_sysctl | raw_tracepoint_writable | cgroup_sockopt | tracing | struct_ops | ext | lsm | sk_lookup</tt></p>
 <p>  An <code>atom</code> used to specify the type of an eBPF program, see <a href="#load-2"><code>load/2</code></a>, <a href="#verify-2"><code>verify/2</code></a></p>
 
+<h3 class="typedecl"><a name="type-prog">prog()</a></h3>
+<p><b>abstract datatype</b>: <tt>prog()</tt></p>
+<p>  A loaded eBPF program as returned by <a href="#load-2"><code>load/2</code></a>.</p>
+
 <h2><a name="index">Function Index</a></h2>
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#attach_socket_filter-2">attach_socket_filter/2</a></td><td>
   Applies a loaded eBPF program as returned by <a href="#load-2"><code>load/2</code></a> with
-  <code>socket_filter</code> as <code>BpfProgramType</code> to a socket.</td></tr>
+  <code>socket_filter</code> as <code>ProgType</code> to a socket.</td></tr>
 <tr><td valign="top"><a href="#attach_xdp-2">attach_xdp/2</a></td><td>
   Applies a loaded eBPF XDP program as returned by <a href="#load-2"><code>load/2</code></a>
-  with <code>xdp</code> a <code>BpfProgramType</code> to a network interface.</td></tr>
+  with <code>xdp</code> a <code>ProgType</code> to a network interface.</td></tr>
 <tr><td valign="top"><a href="#close-1">close/1</a></td><td>
   Closes an eBPF map or program.</td></tr>
 <tr><td valign="top"><a href="#create_map-5">create_map/5</a></td><td>  
@@ -58,7 +58,9 @@ Creates a new eBPF map.</td></tr>
 <tr><td valign="top"><a href="#delete_map_element-2">delete_map_element/2</a></td><td>
   Deletes the value associated with Key in eBPF map Map.</td></tr>
 <tr><td valign="top"><a href="#detach_socket_filter-1">detach_socket_filter/1</a></td><td>
-  Removes the eBPF program attached to <code>SockFd</code>.</td></tr>
+  Removes the eBPF program attached to socket <code>Sock</code>.</td></tr>
+<tr><td valign="top"><a href="#detach_xdp-1">detach_xdp/1</a></td><td>
+  Removes the attached eBPF XDP program from a network interface.</td></tr>
 <tr><td valign="top"><a href="#fd-1">fd/1</a></td><td>  
 Returns a File Descriptor for eBPF program or map.</td></tr>
 <tr><td valign="top"><a href="#get_map_next_key-2">get_map_next_key/2</a></td><td>  
@@ -67,7 +69,7 @@ Retries the next key after Key in the eBPF map Map.</td></tr>
 Loads an eBPF program in binary form to the kernel.</td></tr>
 <tr><td valign="top"><a href="#lookup_map_element-4">lookup_map_element/4</a></td><td>
   Retrieves the value associated with Key in eBPF map Map.</td></tr>
-<tr><td valign="top"><a href="#test_program-4">test_program/4</a></td><td>  
+<tr><td valign="top"><a href="#test-4">test/4</a></td><td>  
 Performs a test run of Prog with Data as input.</td></tr>
 <tr><td valign="top"><a href="#update_map_element-4">update_map_element/4</a></td><td>
   Sets the value associated with Key in eBPF map Map to Value.</td></tr>
@@ -81,23 +83,23 @@ Verifies an eBPF program in binary form with the kernel's verifier.</td></tr>
 
 <h3 class="function"><a name="attach_socket_filter-2">attach_socket_filter/2</a></h3>
 <div class="spec">
-<p><tt>attach_socket_filter(SockFd::non_neg_integer(), ProgFd::<a href="#type-bpf_prog">bpf_prog()</a>) -&gt; ok | {error, atom()}</tt><br></p>
+<p><tt>attach_socket_filter(Sock::<a href="socket.html#type-socket">socket:socket()</a>, Prog::<a href="#type-prog">prog()</a>) -&gt; ok | {error, atom()}</tt><br></p>
 <p> </p>
 </div><p>
   Applies a loaded eBPF program as returned by <a href="#load-2"><code>load/2</code></a> with
-  <code>socket_filter</code> as <code>BpfProgramType</code> to a socket.</p>
+  <code>socket_filter</code> as <code>ProgType</code> to a socket.</p>
 
 <h3 class="function"><a name="attach_xdp-2">attach_xdp/2</a></h3>
 <div class="spec">
-<p><tt>attach_xdp(IfIndex::string() | non_neg_integer(), ProgFd::<a href="#type-bpf_prog">bpf_prog()</a>) -&gt; ok | {error, atom()}</tt><br></p>
+<p><tt>attach_xdp(Interface::string() | non_neg_integer(), Prog::<a href="#type-prog">prog()</a>) -&gt; ok | {error, atom()}</tt><br></p>
 <p> </p>
 </div><p>
   Applies a loaded eBPF XDP program as returned by <a href="#load-2"><code>load/2</code></a>
-  with <code>xdp</code> a <code>BpfProgramType</code> to a network interface.</p>
+  with <code>xdp</code> a <code>ProgType</code> to a network interface.</p>
 
 <h3 class="function"><a name="close-1">close/1</a></h3>
 <div class="spec">
-<p><tt>close(Fd::<a href="#type-bpf_map">bpf_map()</a> | <a href="#type-bpf_prog">bpf_prog()</a>) -&gt; ok | {error, atom()}</tt><br></p>
+<p><tt>close(ProgOrMap::<a href="#type-bpf_map">bpf_map()</a> | <a href="#type-prog">prog()</a>) -&gt; ok | {error, atom()}</tt><br></p>
 <p> </p>
 </div><p>
   Closes an eBPF map or program.</p>
@@ -124,14 +126,21 @@ Creates a new eBPF map.</p>
 
 <h3 class="function"><a name="detach_socket_filter-1">detach_socket_filter/1</a></h3>
 <div class="spec">
-<p><tt>detach_socket_filter(SockFd::non_neg_integer()) -&gt; ok | {error, atom()}</tt><br></p>
+<p><tt>detach_socket_filter(Sock::<a href="socket.html#type-socket">socket:socket()</a>) -&gt; ok | {error, atom()}</tt><br></p>
 <p> </p>
 </div><p>
-  Removes the eBPF program attached to <code>SockFd</code>.</p>
+  Removes the eBPF program attached to socket <code>Sock</code>.</p>
+
+<h3 class="function"><a name="detach_xdp-1">detach_xdp/1</a></h3>
+<div class="spec">
+<p><tt>detach_xdp(Interface::string() | non_neg_integer()) -&gt; ok | {error, atom()}</tt><br></p>
+<p> </p>
+</div><p>
+  Removes the attached eBPF XDP program from a network interface.</p>
 
 <h3 class="function"><a name="fd-1">fd/1</a></h3>
 <div class="spec">
-<p><tt>fd(MapOrProg::<a href="#type-bpf_map">bpf_map()</a> | <a href="#type-bpf_prog">bpf_prog()</a>) -&gt; non_neg_integer() | {error, atom()}</tt><br></p>
+<p><tt>fd(ProgOrMap::<a href="#type-bpf_map">bpf_map()</a> | <a href="#type-prog">prog()</a>) -&gt; non_neg_integer() | {error, atom()}</tt><br></p>
 <p> </p>
 </div><p><p>  
 Returns a File Descriptor for eBPF program or map.</p>
@@ -151,7 +160,7 @@ Retries the next key after Key in the eBPF map Map.</p>
 
 <h3 class="function"><a name="load-2">load/2</a></h3>
 <div class="spec">
-<p><tt>load(BpfProgramType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, BpfProgramBin::binary()) -&gt; {ok, <a href="#type-bpf_prog">bpf_prog()</a>} | {error, atom()}</tt><br></p>
+<p><tt>load(ProgType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, ProgBin::binary()) -&gt; {ok, <a href="#type-prog">prog()</a>} | {error, atom()}</tt><br></p>
 <p> </p>
 </div><p><p>  
 Loads an eBPF program in binary form to the kernel.</p>
@@ -159,7 +168,7 @@ Loads an eBPF program in binary form to the kernel.</p>
   <p>The program is verified by the kernel's verifier before returning  
 a handle to the loaded program to the caller.</p>
  
-  If the an error is returned by this function, BpfProgramBin can be
+  If the an error is returned by this function, ProgBin can be
   verified via <a href="#verify-2"><code>verify/2</code></a> for an informative error description.</p>
 
 <h3 class="function"><a name="lookup_map_element-4">lookup_map_element/4</a></h3>
@@ -169,9 +178,9 @@ a handle to the loaded program to the caller.</p>
 </div><p>
   Retrieves the value associated with Key in eBPF map Map.</p>
 
-<h3 class="function"><a name="test_program-4">test_program/4</a></h3>
+<h3 class="function"><a name="test-4">test/4</a></h3>
 <div class="spec">
-<p><tt>test_program(Prog::<a href="#type-bpf_prog">bpf_prog()</a>, Repeat::integer(), Data::binary(), DataOutSize::non_neg_integer()) -&gt; {ok, Ret::non_neg_integer(), DataOut::binary(), Duration::non_neg_integer()} | {error, atom()}</tt><br></p>
+<p><tt>test(Prog::<a href="#type-prog">prog()</a>, Repeat::integer(), Data::binary(), DataOutSize::non_neg_integer()) -&gt; {ok, Ret::non_neg_integer(), DataOut::binary(), Duration::non_neg_integer()} | {error, atom()}</tt><br></p>
 <p> </p>
 </div><p><p>  
 Performs a test run of Prog with Data as input.</p>
@@ -180,14 +189,14 @@ Performs a test run of Prog with Data as input.</p>
   This function uses the <code>BPF_PROG_TEST_RUN</code> Linux feature, which
   is unfortunately inherently unsafe if not used correctly. The way
   <code>BPF_PROG_TEST_RUN</code> works is that the kernel will write <code>DataOut</code>,
-  created by applying <code>Prog</code> to <code>Data</code>, into a userspace buffer of some  
-predetermined size, exposed in this function as DataOutSize.  
-In most cases this is fine because Prog shouldn't create extensively large  
-DataOut in normal use case, but in case where Prog might create an  
+  created by applying <code>Prog</code> to <code>Data</code>, into a userspace buffer of some
+  predetermined size, exposed in this function as <code>DataOutSize</code>.
+  In most cases this is fine because Prog shouldn't create extensively large
+  <code>DataOut</code> in normal use case, but in case where Prog might create an  
 output that is larger DataOutSize, this can lead to buffer overflow.  
 Hence the warning.</p>
  
-  <p>If <code>DataOut</code> is not needed, <code>DataOutSize</code> can be safely set to <code>0</code>.</p>
+  <p>If <code>DataOut</code> is not needed, <code>DataOutSize</code> should be set to <code>0</code> in which case no <code>DataOut</code> will be created.</p>
  
   On success, returns the return value of <code>Prog(Data)</code>, as well as <code>DataOut</code>
   and the duration of the test as reported by the kernel.</p>
@@ -201,14 +210,14 @@ Hence the warning.</p>
 
 <h3 class="function"><a name="verify-2">verify/2</a></h3>
 <div class="spec">
-<p><tt>verify(BpfProgramType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, BpfProgramBin::binary()) -&gt; {ok, string()} | {error, atom()} | {error, atom(), string()}</tt><br></p>
+<p><tt>verify(ProgType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, ProgBin::binary()) -&gt; {ok, string()} | {error, atom()} | {error, atom(), string()}</tt><br></p>
 <p> </p>
 </div><p>
   same as <a href="#verify-3"><code>verify/3</code></a> with default options.</p>
 
 <h3 class="function"><a name="verify-3">verify/3</a></h3>
 <div class="spec">
-<p><tt>verify(BpfProgramType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, BpfProgramBin::binary(), Options::[{log_buffer_size, non_neg_integer()} | {kernel_version, non_neg_integer()} | {license, string()}]) -&gt; ok | {ok, string()} | {error, atom()} | {error, atom(), string()}</tt><br></p>
+<p><tt>verify(ProgType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, ProgBin::binary(), Options::[{log_buffer_size, non_neg_integer()} | {kernel_version, non_neg_integer()} | {license, string()}]) -&gt; ok | {ok, string()} | {error, atom()} | {error, atom(), string()}</tt><br></p>
 <p> </p>
 </div><p><p>  
 Verifies an eBPF program in binary form with the kernel's verifier.</p>
