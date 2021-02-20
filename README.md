@@ -42,16 +42,22 @@ Checkout the [examples](examples/).
 
 A minimal example is given below:
 ```erlang
-{ok, Prog} = ebpf_user:load(socket_filter,
-                             ebpf_asm:assemble([
-                                 % Drop all packets
-                                 ebpf_kern:mov64_imm(0,0), % R0 = 0
-                                 ebpf_kern:exit_insn()     % return R0
-                             ])),
-{ok, S} = socket:open(inet, stream, {raw, 0}),
-{ok, SockFd} = socket:getopt(S, otp, fd),
-ok = ebpf_user:attach_socket_filter(SockFd, Prog), % All new input to S is dropped
-ok = ebpf_user:detach_socket_filter(SockFd). % S is back to normal and Prog can be reused
+BinProg = ebpf_asm:assemble([
+                % Drop all packets
+                ebpf_kern:mov64_imm(0, 0), % r0 = 0
+                ebpf_kern:exit_insn()      % return r0
+            ]),
+{ok, FilterProg} = ebpf_user:load(socket_filter, BinProg),
+
+{ok, Sock} = socket:open(inet, stream, {raw, 0}),
+ok = ebpf_user:attach_socket_filter(Sock, FilterProg), % All new input to Sock is
+ok = ebpf_user:detach_socket_filter(Sock), % Sock is back to normal and FilterProg can be
+ok = ebpf_user:close(FilterProg), % FilterProg is unloaded from the kernel
+
+{ok, XdpProg} = ebpf_user:load(xdp, BinProg),
+ok = ebpf_user:attach_xdp("lo", XdpProg), % Try pinging 127.0.0.1, go ahead
+ok = ebpf_user:detach_xdp("lo"), % Now, that's better :)
+ok = ebpf_user:close(XdpProg).
 ```
 
 For projects that build with `rebar3`, add `ebpf` as a dependency in `rebar.config`:

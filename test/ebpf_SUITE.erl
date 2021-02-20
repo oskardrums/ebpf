@@ -178,6 +178,7 @@ groups() ->
             test_user_test_program_2,
             simple_socket_filter_1,
             simple_xdp_1,
+            readme_example_1,
             test_verify_2_cf_ttl_1,
             test_verify_3_cf_ttl_1
         ]}
@@ -270,6 +271,33 @@ simple_xdp_1(_Config) ->
     ok = ebpf_user:attach_xdp("lo", Prog),
     ok = ebpf_user:detach_xdp("lo"),
     ok = ebpf_user:close(Prog).
+
+readme_example_1() -> [].
+readme_example_1(_Config) ->
+    BinProg = ebpf_asm:assemble([
+        % Drop all packets
+
+        % r0 = 0
+        ebpf_kern:mov64_imm(0, 0),
+        % return r0
+        ebpf_kern:exit_insn()
+    ]),
+    {ok, FilterProg} = ebpf_user:load(socket_filter, BinProg),
+    {ok, Sock} = socket:open(inet, stream, {raw, 0}),
+    % All new input to Sock is
+    ok = ebpf_user:attach_socket_filter(Sock, FilterProg),
+    % Sock is back to normal and FilterProg can be
+    ok = ebpf_user:detach_socket_filter(Sock),
+
+    % FilterProg is unloaded from the kernel
+    ok = ebpf_user:close(FilterProg),
+
+    {ok, XdpProg} = ebpf_user:load(xdp, BinProg),
+    % Try pinging 127.0.0.1, go ahead
+    ok = ebpf_user:attach_xdp("lo", XdpProg),
+    % Now, that's better :)
+    ok = ebpf_user:detach_xdp("lo"),
+    ok = ebpf_user:close(XdpProg).
 
 test_user_create_map_hash_1() -> [].
 test_user_create_map_hash_1(_Config) ->
