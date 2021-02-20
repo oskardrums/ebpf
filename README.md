@@ -47,8 +47,8 @@ BinProg = ebpf_asm:assemble([
                 ebpf_kern:mov64_imm(0, 0), % r0 = 0
                 ebpf_kern:exit_insn()      % return r0
             ]),
-{ok, FilterProg} = ebpf_user:load(socket_filter, BinProg),
 
+{ok, FilterProg} = ebpf_user:load(socket_filter, BinProg),
 {ok, Sock} = socket:open(inet, stream, {raw, 0}),
 ok = ebpf_user:attach_socket_filter(Sock, FilterProg), % All new input to Sock is
 ok = ebpf_user:detach_socket_filter(Sock), % Sock is back to normal and FilterProg can be
