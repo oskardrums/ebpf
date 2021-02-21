@@ -19,6 +19,7 @@
 %% API
 -export([
     load/2,
+    load/3,
     test/4,
     verify/2,
     verify/3,
@@ -113,6 +114,11 @@
 -opaque prog() :: integer().
 %% A loaded eBPF program as returned by {@link load/2}.
 
+-type load_option() ::
+    'sleepable'
+    | {'log_buffer_size', non_neg_integer()}
+    | {'license', string()}.
+
 -export_type([bpf_map/0, prog/0]).
 
 %%%===================================================================
@@ -172,16 +178,49 @@ verify(ProgType, ProgBin, Options) ->
 %% The program is verified by the kernel's verifier before returning
 %% a handle to the loaded program to the caller.
 %%
-%% If the an error is returned by this function, ProgBin can be
-%% verified via {@link verify/2} for an informative error description.
+%% The following `Options' are currently supported:
+%%
+%% `sleepable' - Loads the eBPF program as sleepable, meaning it can
+%% use eBPF helpers that might sleep, e.g. `copy_from_user', but it
+%% can only be attached to certain sleepable kernel contexts.
+%% Defaults to non-sleepable.
+%%
+%% `{log_buffer_size, non_neg_integer()}' - Specifies the size of the
+%% log buffer used by the kernel's verifier. If set to 0, verifier logs
+%% are disabled, otherwise this call returns also the verifier's log
+%% as a `string()'.
+%% Defaults to 0, i.e. logging is disabled.
+%%
+%% Note: if `log_buffer_size' is specified to a positive value, but
+%% the specified size is found to be insufficient during verification,
+%% the kernel may return an error even if the program would otherwise
+%% be valid. In that case either specify a bigger `log_buffer_size'
+%% or disable the verifier's log completely with `{log_buffer_size, 0}'.
+%% `{license, string()}' - Specifies the license for `BinProg'.
+%% Some eBPF helpers may only be used by GPL-comliant eBPF programs.
+%% Defaults to `""'.
+%% @end
+%%--------------------------------------------------------------------
+-spec load(bpf_prog_type(), binary(), [load_option()]) ->
+    {'ok', prog()} | {'error', atom()} | {'ok', prog(), string()} | {'error', atom(), string()}.
+load(ProgType, BinProg, Options) ->
+    {Flags, LogBufferSize, License} = read_load_options(Options),
+    bpf_load_program(
+        bpf_prog_type_to_int(ProgType),
+        BinProg,
+        LogBufferSize,
+        License,
+        Flags
+    ).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Same as {@link load/3}, with default options.
 %% @end
 %%--------------------------------------------------------------------
 -spec load(bpf_prog_type(), binary()) -> {'ok', prog()} | {'error', atom()}.
-load(ProgType, ProgBin) ->
-    bpf_load_program(
-        bpf_prog_type_to_int(ProgType),
-        ProgBin
-    ).
+load(ProgType, BinProg) ->
+    load(ProgType, BinProg, []).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -390,9 +429,14 @@ fd(ProgOrMap) -> ProgOrMap.
 bpf_verify_program(_ProgType, _ProgBin, _LogBufferSize, _KernelVersion, _License) ->
     not_loaded(?LINE).
 
--spec bpf_load_program(non_neg_integer(), binary()) ->
-    {'ok', non_neg_integer()} | {'error', atom()}.
-bpf_load_program(_ProgType, _ProgBin) ->
+-spec bpf_load_program(
+    non_neg_integer(),
+    binary(),
+    non_neg_integer(),
+    string(),
+    non_neg_integer()
+) -> {'ok', non_neg_integer()} | {'error', atom()}.
+bpf_load_program(_ProgType, _BinProg, _LogBufferSize, _License, _Flags) ->
     not_loaded(?LINE).
 
 -spec bpf_attach_socket_filter(non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', atom()}.
@@ -460,6 +504,23 @@ not_loaded(Line) ->
 %%%-------------------------------------------------------------------
 %%% Other internal functions
 %%%-------------------------------------------------------------------
+-spec read_load_options([load_option()]) -> {non_neg_integer(), non_neg_integer(), string()}.
+read_load_options(Options) ->
+    read_load_options(Options, {0, 0, ""}).
+
+-spec read_load_options([load_option()], {non_neg_integer(), non_neg_integer(), string()}) ->
+    {non_neg_integer(), non_neg_integer(), string()}.
+read_load_options([sleepable | More], {Flags0, LogBufferSize0, License0}) ->
+    read_load_options(More, {Flags0 bor (1 bsl 4), LogBufferSize0, License0});
+read_load_options(
+    [{log_buffer_size, LogBufferSize} | More],
+    {Flags0, _LogBufferSize0, License0}
+) ->
+    read_load_options(More, {Flags0, LogBufferSize, License0});
+read_load_options([{license, License} | More], {Flags0, LogBufferSize0, _License0}) ->
+    read_load_options(More, {Flags0, LogBufferSize0, License});
+read_load_options([], Acc) ->
+    Acc.
 
 -spec bpf_prog_type_to_int(bpf_prog_type()) -> ebpf_kern:bpf_imm().
 bpf_prog_type_to_int(unspec) -> 0;
