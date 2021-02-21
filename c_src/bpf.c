@@ -949,3 +949,22 @@ int bpf_prog_bind_map(int prog_fd, int map_fd,
 
 	return sys_bpf(BPF_PROG_BIND_MAP, &attr, sizeof(attr));
 }
+
+int ebpf__prog_load(enum bpf_prog_type type, const struct bpf_insn *insns,
+		    size_t insns_cnt, const char *license, char *log_buf,
+		    size_t log_buf_sz, int log_level, __u32 prog_flags)
+{
+  union bpf_attr load_attr;
+
+  memset(&load_attr, 0, sizeof(load_attr));
+  load_attr.prog_type = type;
+  load_attr.insns = ptr_to_u64(insns);
+  load_attr.insn_cnt = (__u32)insns_cnt;
+  load_attr.license = ptr_to_u64(license);
+  load_attr.log_buf = ptr_to_u64(log_buf);
+  load_attr.log_size = log_buf_sz;
+  load_attr.log_level = log_level;
+  load_attr.prog_flags = prog_flags;
+
+  return sys_bpf_prog_load(&load_attr, sizeof(load_attr));
+}

@@ -660,6 +660,40 @@ ebpf_attach_xdp(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
   return mk_atom(env, "ok");
 }
 
+
+
+
+
+/*
+static ERL_NIF_TERM
+ebpf_detach_xdp1(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  int if_index = -1;
+  int res = 0;
+
+  if(argc != 1)
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(!enif_get_int(env, argv[0], &if_index))
+    {
+      return mk_error(env, "bad_if_index");
+    }
+
+  res = bpf_set_link_xdp_fd(if_index, -1, 0);
+
+  if(res < 0){
+    return mk_error(env, erl_errno_id(errno));
+  }
+
+  return mk_atom(env, "ok");
+}
+
+
+
+
+
 static ERL_NIF_TERM
 ebpf_load_program(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
@@ -693,6 +727,8 @@ ebpf_load_program(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
   return mk_atom(env, "ok");
 }
+*/
+
 
 static ERL_NIF_TERM
 ebpf__verify_program_no_log(ErlNifEnv* env, int type, ErlNifBinary* bin, uint32_t kernel_version, const char * license)
@@ -819,26 +855,6 @@ ebpf_verify_program5(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
 
   return res;
-}
-
-
-int ebpf__prog_load(enum bpf_prog_type type, const struct bpf_insn *insns,
-		    size_t insns_cnt, const char *license, char *log_buf,
-		    size_t log_buf_sz, int log_level, __u32 prog_flags)
-{
-  union bpf_attr load_attr;
-
-  memset(&load_attr, 0, sizeof(load_attr));
-  load_attr.prog_type = type;
-  load_attr.insns = ptr_to_u64(insns);
-  load_attr.insn_cnt = (__u32)insns_cnt;
-  load_attr.license = ptr_to_u64(license);
-  load_attr.log_buf = ptr_to_u64(log_buf);
-  load_attr.log_size = log_buf_sz;
-  load_attr.log_level = log_level;
-  load_attr.prog_flags = prog_flags;
-
-  return sys_bpf_prog_load(&load_attr, sizeof(load_attr));
 }
 
 
