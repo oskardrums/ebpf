@@ -30,6 +30,50 @@ extern "C" {
 		};							    \
 	})
 
+
+#ifndef __NR_bpf
+# if defined(__i386__)
+#  define __NR_bpf 357
+# elif defined(__x86_64__)
+#  define __NR_bpf 321
+# elif defined(__aarch64__)
+#  define __NR_bpf 280
+# elif defined(__sparc__)
+#  define __NR_bpf 349
+# elif defined(__s390__)
+#  define __NR_bpf 351
+# elif defined(__arc__)
+#  define __NR_bpf 280
+# else
+#  error __NR_bpf not defined. libbpf does not support your arch.
+# endif
+#endif
+
+
+static inline __u64 ptr_to_u64(const void *ptr)
+{
+	return (__u64) (unsigned long) ptr;
+}
+
+static inline int sys_bpf(enum bpf_cmd cmd, union bpf_attr *attr,
+			  unsigned int size)
+{
+	return syscall(__NR_bpf, cmd, attr, size);
+}
+
+static inline int sys_bpf_prog_load(union bpf_attr *attr, unsigned int size)
+{
+	int retries = 5;
+	int fd;
+
+	do {
+		fd = sys_bpf(BPF_PROG_LOAD, attr, size);
+	} while (fd < 0 && errno == EAGAIN && retries-- > 0);
+
+	return fd;
+}
+
+
 struct bpf_prog_load_params {
 	enum bpf_prog_type prog_type;
 	enum bpf_attach_type expected_attach_type;

@@ -821,6 +821,167 @@ ebpf_verify_program5(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
   return res;
 }
 
+
+int ebpf__prog_load(enum bpf_prog_type type, const struct bpf_insn *insns,
+		    size_t insns_cnt, const char *license, char *log_buf,
+		    size_t log_buf_sz, int log_level, __u32 prog_flags)
+{
+  union bpf_attr load_attr;
+
+  memset(&load_attr, 0, sizeof(load_attr));
+  load_attr.prog_type = type;
+  load_attr.insns = ptr_to_u64(insns);
+  load_attr.insn_cnt = (__u32)insns_cnt;
+  load_attr.license = ptr_to_u64(license);
+  load_attr.log_buf = ptr_to_u64(log_buf);
+  load_attr.log_size = log_buf_sz;
+  load_attr.log_level = log_level;
+  load_attr.prog_flags = prog_flags;
+
+  return sys_bpf_prog_load(&load_attr, sizeof(load_attr));
+}
+
+
+static ERL_NIF_TERM
+ebpf__load_program_no_log(ErlNifEnv* env,
+			  int type,
+			  ErlNifBinary* bin,
+			  const char * license,
+			  uint32_t flags)
+{
+  int res = ebpf__prog_load(type,
+			    (const struct bpf_insn *) bin->data,
+			    bin->size / 8,
+			    license,
+			    NULL,
+			    0,
+			    0,
+			    flags);
+  if (res < 0)
+    {
+      return mk_error(env, erl_errno_id(errno));
+    }
+  else
+    {
+      return enif_make_tuple2(env, mk_atom(env, "ok"), enif_make_int(env, res));
+    }
+}
+
+static ERL_NIF_TERM
+ebpf__load_program(ErlNifEnv* env,
+		   int type,
+		   ErlNifBinary * bin,
+		   char * buf,
+		   size_t buf_size,
+		   const char * license,
+		   uint32_t flags)
+{
+  int res = -1;
+  int log_level = 1;
+
+  if (buf_size == 0)
+    {
+      return ebpf__load_program_no_log(env, type, bin, license, flags);
+    }
+
+  res = ebpf__prog_load(type,
+			(const struct bpf_insn *) bin->data,
+			bin->size / 8,
+			license,
+			buf,
+			buf_size,
+			log_level,
+			flags);
+  if (res < 0)
+    {
+      switch (errno)
+	{
+	case EACCES:
+	case EINVAL:
+	case ENOSPC:
+	case EBADF:
+	  return enif_make_tuple3(env,
+				  mk_atom(env, "error"),
+				  mk_atom(env, erl_errno_id(errno)),
+				  enif_make_string(env, buf, ERL_NIF_LATIN1));
+	default:
+	  return enif_make_tuple3(env,
+				  mk_atom(env, "error"),
+				  mk_atom(env, erl_errno_id(errno)),
+				  enif_make_list(env, 0));
+
+	}
+    }
+  else
+    {
+      close(res);
+      return enif_make_tuple3(env, mk_atom(env, "ok"), enif_make_int(env, res), enif_make_string(env, buf, ERL_NIF_LATIN1));
+    }
+}
+
+static ERL_NIF_TERM
+ebpf_load_program5(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  int type = 0;
+  ErlNifBinary bin = {0,};
+  char * buf = NULL;
+  uint32_t buf_size = 0;
+  uint32_t flags = 0;
+  char license[256] = {0,};
+
+  ERL_NIF_TERM res = {0,};
+
+  if(argc != 5)
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(!enif_get_int(env, argv[0], &type))
+    {
+      return enif_make_badarg(env);
+    }
+
+
+  if(!enif_inspect_binary(env, argv[1], &bin))
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(!enif_get_uint(env, argv[2], &buf_size))
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(enif_get_string(env, argv[3], license, sizeof(license), ERL_NIF_LATIN1) <= 0)
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(!enif_get_uint(env, argv[2], &buf_size))
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(buf_size > 0)
+    {
+      buf = (char *) malloc (buf_size);
+
+      if(buf == NULL)
+	{
+	  return mk_error(env, erl_errno_id(errno));
+	}
+      memset(buf, 0, buf_size);
+    }
+  res = ebpf__load_program(env, type, &bin, buf, buf_size, license, flags);
+  if (buf)
+    {
+      free(buf);
+    }
+
+  return res;
+}
+
+
 static ERL_NIF_TERM
 ebpf_attach_socket_filter(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
@@ -1144,10 +1305,11 @@ int ebpf_nif_lib_upgrade(ErlNifEnv* caller_env, void** priv_data, void** old_pri
 }
 
 static ErlNifFunc nif_funcs[] = {
-				 {"bpf_load_program", 2, ebpf_load_program, 0},
+				 {"bpf_load_program", 5, ebpf_load_program5, 0},
 				 {"bpf_attach_socket_filter", 2, ebpf_attach_socket_filter, 0},
 				 {"bpf_detach_socket_filter", 1, ebpf_detach_socket_filter1, 0},
 				 {"bpf_attach_xdp", 2, ebpf_attach_xdp, 0},
+			      /* {"bpf_detach_xdp", 1, ebpf_detach_xdp1, 0}, */
 				 {"bpf_verify_program", 5, ebpf_verify_program5, 0},
 				 {"bpf_create_map", 5, ebpf_create_map5, 0},
 				 {"bpf_close", 1, ebpf_close1, 0},
