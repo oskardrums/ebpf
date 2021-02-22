@@ -19,11 +19,11 @@ Interactions with the eBPF system.
 <h2><a name="description">Description</a></h2><p>   
 Interactions with the eBPF system</p>
   
-   <code>ebpf_user</code> contains functions that expose the Linux eBPF userspace API,
-   including loading, verifying and applying eBPF programs, as well
-   as creating and manipulating eBPF maps.
-   For generating binary eBPF programs see <a href="ebpf_asm.html"><code>ebpf_asm</code></a> and <a href="ebpf_kern.html"><code>ebpf_kern</code></a>,
-   but note that the functions in this module can work with any
+   <p><code>ebpf_user</code> contains functions that expose the Linux eBPF userspace API,   
+including loading, debugging and applying eBPF programs.</p>
+  
+   For generating binary eBPF programs see <a href="ebpf_asm.html"><code>ebpf_asm</code></a> and <a href="ebpf_kern.html"><code>ebpf_kern</code></a>.
+   Note that the functions in this module can work with any
    binary eBPF program, not only those created via <code>ebpf</code>.
   
 <h2><a name="types">Data Types</a></h2>
@@ -38,7 +38,11 @@ Interactions with the eBPF system</p>
 
 <h3 class="typedecl"><a name="type-bpf_prog_type">bpf_prog_type()</a></h3>
 <p><tt>bpf_prog_type() = unspec | socket_filter | kprobe | sched_cls | sched_act | tracepoint | xdp | perf_event | cgroup_skb | cgroup_sock | lwt_in | lwt_out | lwt_xmit | sock_ops | sk_skb | cgroup_device | sk_msg | raw_tracepoint | cgroup_sock_addr | lwt_seg6local | lirc_mode2 | sk_reuseport | flow_dissector | cgroup_sysctl | raw_tracepoint_writable | cgroup_sockopt | tracing | struct_ops | ext | lsm | sk_lookup</tt></p>
-<p>  An <code>atom</code> used to specify the type of an eBPF program, see <a href="#load-2"><code>load/2</code></a>, <a href="#verify-2"><code>verify/2</code></a></p>
+<p>  An <code>atom</code> used to specify the type of an eBPF program, see <a href="#load-2"><code>load/2</code></a></p>
+
+<h3 class="typedecl"><a name="type-load_option">load_option()</a></h3>
+<p><tt>load_option() = sleepable | {log_buffer_size, non_neg_integer()} | {license, string()}</tt></p>
+
 
 <h3 class="typedecl"><a name="type-prog">prog()</a></h3>
 <p><b>abstract datatype</b>: <tt>prog()</tt></p>
@@ -65,7 +69,9 @@ Creates a new eBPF map.</td></tr>
 Returns a File Descriptor for eBPF program or map.</td></tr>
 <tr><td valign="top"><a href="#get_map_next_key-2">get_map_next_key/2</a></td><td>  
 Retries the next key after Key in the eBPF map Map.</td></tr>
-<tr><td valign="top"><a href="#load-2">load/2</a></td><td>  
+<tr><td valign="top"><a href="#load-2">load/2</a></td><td>
+  Same as <a href="#load-3"><code>load/3</code></a>, with default options.</td></tr>
+<tr><td valign="top"><a href="#load-3">load/3</a></td><td>  
 Loads an eBPF program in binary form to the kernel.</td></tr>
 <tr><td valign="top"><a href="#lookup_map_element-4">lookup_map_element/4</a></td><td>
   Retrieves the value associated with Key in eBPF map Map.</td></tr>
@@ -73,10 +79,6 @@ Loads an eBPF program in binary form to the kernel.</td></tr>
 Performs a test run of Prog with Data as input.</td></tr>
 <tr><td valign="top"><a href="#update_map_element-4">update_map_element/4</a></td><td>
   Sets the value associated with Key in eBPF map Map to Value.</td></tr>
-<tr><td valign="top"><a href="#verify-2">verify/2</a></td><td>
-  same as <a href="#verify-3"><code>verify/3</code></a> with default options.</td></tr>
-<tr><td valign="top"><a href="#verify-3">verify/3</a></td><td>  
-Verifies an eBPF program in binary form with the kernel's verifier.</td></tr>
 </table>
 
 <h2><a name="functions">Function Details</a></h2>
@@ -160,7 +162,14 @@ Retries the next key after Key in the eBPF map Map.</p>
 
 <h3 class="function"><a name="load-2">load/2</a></h3>
 <div class="spec">
-<p><tt>load(ProgType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, ProgBin::binary()) -&gt; {ok, <a href="#type-prog">prog()</a>} | {error, atom()}</tt><br></p>
+<p><tt>load(ProgType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, BinProg::binary()) -&gt; {ok, <a href="#type-prog">prog()</a>} | {ok, <a href="#type-prog">prog()</a>, string()} | {error, atom()} | {error, atom(), string()}</tt><br></p>
+<p> </p>
+</div><p>
+  Same as <a href="#load-3"><code>load/3</code></a>, with default options.</p>
+
+<h3 class="function"><a name="load-3">load/3</a></h3>
+<div class="spec">
+<p><tt>load(ProgType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, BinProg::binary(), Options::[<a href="#type-load_option">load_option()</a>]) -&gt; {ok, <a href="#type-prog">prog()</a>} | {ok, <a href="#type-prog">prog()</a>, string()} | {error, atom()} | {error, atom(), string()}</tt><br></p>
 <p> </p>
 </div><p><p>  
 Loads an eBPF program in binary form to the kernel.</p>
@@ -168,8 +177,27 @@ Loads an eBPF program in binary form to the kernel.</p>
   <p>The program is verified by the kernel's verifier before returning  
 a handle to the loaded program to the caller.</p>
  
-  If the an error is returned by this function, ProgBin can be
-  verified via <a href="#verify-2"><code>verify/2</code></a> for an informative error description.</p>
+  <p>The following <code>Options</code> are currently supported:</p>
+ 
+  <p><code>sleepable</code> - Loads the eBPF program as sleepable, meaning it can
+  use eBPF helpers that might sleep, e.g. <code>copy_from_user</code>, but it  
+can only be attached to certain sleepable kernel contexts.  
+Defaults to non-sleepable.</p>
+ 
+  <p><code>{log_buffer_size, non_neg_integer()}</code> - Specifies the size of the
+  log buffer used by the kernel's verifier. If set to 0, verifier logs
+  are disabled, otherwise this call returns also the verifier's log
+  as a <code>string()</code>.  
+Defaults to 0, i.e. logging is disabled.</p>
+ 
+  Note: if <code>log_buffer_size</code> is specified to a positive value, but
+  the specified size is found to be insufficient during verification,
+  the kernel may return an error even if the program would otherwise
+  be valid. In that case either specify a bigger <code>log_buffer_size</code>
+  or disable the verifier's log completely with <code>{log_buffer_size, 0}</code>.
+  <code>{license, string()}</code> - Specifies the license for <code>BinProg</code>.
+  Some eBPF helpers may only be used by GPL-comliant eBPF programs.
+  Defaults to <code>""</code>.</p>
 
 <h3 class="function"><a name="lookup_map_element-4">lookup_map_element/4</a></h3>
 <div class="spec">
@@ -207,34 +235,6 @@ Hence the warning.</p>
 <p> </p>
 </div><p>
   Sets the value associated with Key in eBPF map Map to Value.</p>
-
-<h3 class="function"><a name="verify-2">verify/2</a></h3>
-<div class="spec">
-<p><tt>verify(ProgType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, ProgBin::binary()) -&gt; {ok, string()} | {error, atom()} | {error, atom(), string()}</tt><br></p>
-<p> </p>
-</div><p>
-  same as <a href="#verify-3"><code>verify/3</code></a> with default options.</p>
-
-<h3 class="function"><a name="verify-3">verify/3</a></h3>
-<div class="spec">
-<p><tt>verify(ProgType::<a href="#type-bpf_prog_type">bpf_prog_type()</a>, ProgBin::binary(), Options::[{log_buffer_size, non_neg_integer()} | {kernel_version, non_neg_integer()} | {license, string()}]) -&gt; ok | {ok, string()} | {error, atom()} | {error, atom(), string()}</tt><br></p>
-<p> </p>
-</div><p><p>  
-Verifies an eBPF program in binary form with the kernel's verifier.</p>
- 
-  <p>If the program is deemed valid, the kernel reports a textual
-  description of the verified program which is returned by this function
-  as <code>{ok, Desc}</code>.</p>
- 
-  <p>If the program is deemed invalid, the kernel reports an error log
-  which is returned as <code>{error, Errno, ErrorLog}</code>.
-  Some errors, such as insufficient permissions, don't generate error logs.
-  these error are returned as <code>{error, Errno}</code>.</p>
- 
-  The default values for unspecified options are:
-  * {log_buffer_size, 4096}
-  * {kernel_version, 0}
-  * {license, "GPL"}</p>
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
