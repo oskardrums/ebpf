@@ -5,10 +5,10 @@
 %%% Interactions with the eBPF system
 %%%
 %%% `ebpf_user' contains functions that expose the Linux eBPF userspace API,
-%%% including loading, verifying and applying eBPF programs, as well
-%%% as creating and manipulating eBPF maps.
-%%% For generating binary eBPF programs see {@link ebpf_asm} and {@link ebpf_kern},
-%%% but note that the functions in this module can work with any
+%%% including loading, debugging and applying eBPF programs.
+%%%
+%%% For generating binary eBPF programs see {@link ebpf_asm} and {@link ebpf_kern}.
+%%% Note that the functions in this module can work with any
 %%% binary eBPF program, not only those created via `ebpf'.
 %%%
 %%% @end
@@ -21,8 +21,6 @@
     load/2,
     load/3,
     test/4,
-    verify/2,
-    verify/3,
     create_map/5,
     update_map_element/4,
     lookup_map_element/4,
@@ -73,7 +71,7 @@
     | 'ext'
     | 'lsm'
     | 'sk_lookup'.
-%% An `atom' used to specify the type of an eBPF program, see {@link load/2}, {@link verify/2}
+%% An `atom' used to specify the type of an eBPF program, see {@link load/2}
 
 -type bpf_map_type() ::
     'unspec'
@@ -124,52 +122,6 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @doc
-%% same as {@link verify/3} with default options.
-%% @end
-%%--------------------------------------------------------------------
--spec verify(bpf_prog_type(), binary()) ->
-    {'ok', string()} | {'error', atom()} | {'error', atom(), string()}.
-verify(ProgType, ProgBin) ->
-    verify(ProgType, ProgBin, []).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Verifies an eBPF program in binary form with the kernel's verifier.
-%%
-%% If the program is deemed valid, the kernel reports a textual
-%% description of the verified program which is returned by this function
-%% as `{ok, Desc}'.
-%%
-%% If the program is deemed invalid, the kernel reports an error log
-%% which is returned as `{error, Errno, ErrorLog}'.
-%% Some errors, such as insufficient permissions, don't generate error logs.
-%% these error are returned as `{error, Errno}'.
-%%
-%% The default values for unspecified options are:
-%% * {log_buffer_size, 4096}
-%% * {kernel_version, 0}
-%% * {license, "GPL"}
-%% @end
-%%--------------------------------------------------------------------
--spec verify(bpf_prog_type(), binary(), [
-    {log_buffer_size, non_neg_integer()}
-    | {kernel_version, non_neg_integer()}
-    | {license, string()}
-]) -> 'ok' | {'ok', string()} | {'error', atom()} | {'error', atom(), string()}.
-verify(ProgType, ProgBin, Options) ->
-    LogBufferSize = proplists:get_value(log_buffer_size, Options, 4096),
-    KernelVersion = proplists:get_value(kernel_version, Options, 0),
-    License = proplists:get_value(license, Options, "GPL"),
-    bpf_verify_program(
-        bpf_prog_type_to_int(ProgType),
-        ProgBin,
-        LogBufferSize,
-        KernelVersion,
-        License
-    ).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -418,16 +370,6 @@ fd(ProgOrMap) -> ProgOrMap.
 %%%-------------------------------------------------------------------
 %%% NIFs and NIF related functions
 %%%-------------------------------------------------------------------
-
--spec bpf_verify_program(
-    non_neg_integer(),
-    binary(),
-    non_neg_integer(),
-    non_neg_integer(),
-    string()
-) -> 'ok' | {'ok', string()} | {'error', atom()} | {'error', atom(), string()}.
-bpf_verify_program(_ProgType, _ProgBin, _LogBufferSize, _KernelVersion, _License) ->
-    not_loaded(?LINE).
 
 -spec bpf_load_program(
     non_neg_integer(),
