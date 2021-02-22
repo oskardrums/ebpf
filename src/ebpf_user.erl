@@ -378,7 +378,11 @@ fd(ProgOrMap) -> ProgOrMap.
     non_neg_integer(),
     string(),
     non_neg_integer()
-) -> {'ok', non_neg_integer()} | {'error', atom()}.
+) ->
+    {'ok', non_neg_integer()}
+    | {'ok', non_neg_integer(), string()}
+    | {'error', atom()}
+    | {'error', atom(), string()}.
 bpf_load_program(_ProgType, _BinProg, _LogBufferSize, _License, _Flags) ->
     not_loaded(?LINE).
 
