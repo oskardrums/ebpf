@@ -70,4 +70,4 @@ Contributions
 ------------
 Are welcome :)
 
-Fill free to open an issue or a PR if you encounter any problem or have an idea for an improvement.
+Feel free to open an issue or a PR if you encounter any problem or have an idea for an improvement.
