@@ -179,8 +179,8 @@ groups() ->
             simple_socket_filter_1,
             simple_xdp_1,
             readme_example_1,
-            test_verify_2_cf_ttl_1,
-            test_verify_3_cf_ttl_1
+            test_load_cf_ttl_1,
+            test_load_cf_ttl_2
         ]}
     ].
 
@@ -453,8 +453,8 @@ ld_map_fd_known_good_result_1(_Config) ->
         }
     ] = ebpf_kern:ld_map_fd(1, 17).
 
-test_verify_2_cf_ttl_1() -> [].
-test_verify_2_cf_ttl_1(_Config) ->
+test_load_cf_ttl_1() -> [].
+test_load_cf_ttl_1(_Config) ->
     Expected =
         "0: (61) r0 = *(u32 *)(r1 +16)\n"
         "1: (15) if r0 == 0x86dd goto pc+3\n"
@@ -528,11 +528,16 @@ test_verify_2_cf_ttl_1(_Config) ->
         ebpf_kern:mov64_imm(0, -1),
         ebpf_kern:exit_insn()
     ]),
-    {ok, Result} = ebpf_user:verify(socket_filter, ebpf_asm:assemble(Instructions)),
-    Expected = lists:sublist(Result, length(Expected)).
+    {ok, Prog, Desc} = ebpf_user:load(socket_filter, ebpf_asm:assemble(Instructions), [
+        {log_buffer_size, 4096},
+        {license, "Dual BSD/GPL"},
+        sleepable
+    ]),
+    Expected = lists:sublist(Desc, length(Expected)),
+    ok = ebpf_user:close(Prog).
 
-test_verify_3_cf_ttl_1() -> [].
-test_verify_3_cf_ttl_1(_Config) ->
+test_load_cf_ttl_2() -> [].
+test_load_cf_ttl_2(_Config) ->
     {ok, Map} = ebpf_user:create_map(hash, 4, 8, 4, 0),
     MapFd = ebpf_user:fd(Map),
     Instructions = lists:flatten([
@@ -563,8 +568,9 @@ test_verify_3_cf_ttl_1(_Config) ->
         ebpf_kern:mov64_imm(0, -1),
         ebpf_kern:exit_insn()
     ]),
-    ok = ebpf_user:verify(
+    {ok, Prog} = ebpf_user:load(
         socket_filter,
         ebpf_asm:assemble(Instructions),
         [{log_buffer_size, 0}]
-    ).
+    ),
+    ok = ebpf_user:close(Prog).

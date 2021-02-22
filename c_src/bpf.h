@@ -30,6 +30,7 @@ extern "C" {
 		};							    \
 	})
 
+
 struct bpf_prog_load_params {
 	enum bpf_prog_type prog_type;
 	enum bpf_attach_type expected_attach_type;
@@ -335,8 +336,14 @@ struct bpf_test_run_opts {
 #define bpf_test_run_opts__last_field cpu
 
 int bpf_prog_test_run_opts(int prog_fd,
-				      struct bpf_test_run_opts *opts);
+			   struct bpf_test_run_opts *opts);
+
 int bpf_set_link_xdp_fd(int ifindex, int fd, __u32 flags);
+
+int ebpf__prog_load(enum bpf_prog_type type, const struct bpf_insn *insns,
+		    size_t insns_cnt, const char *license, char *log_buf,
+		    size_t log_buf_sz, int log_level, __u32 prog_flags);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
