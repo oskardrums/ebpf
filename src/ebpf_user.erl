@@ -154,7 +154,7 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec load(bpf_prog_type(), binary(), [load_option()]) ->
-    {'ok', prog()} | {'error', atom()} | {'ok', prog(), string()} | {'error', atom(), string()}.
+    {'ok', prog()} | {'ok', prog(), string()} | {'error', atom()} | {'error', atom(), string()}.
 load(ProgType, BinProg, Options) ->
     {Flags, LogBufferSize, License} = read_load_options(Options),
     bpf_load_program(
@@ -170,7 +170,8 @@ load(ProgType, BinProg, Options) ->
 %% Same as {@link load/3}, with default options.
 %% @end
 %%--------------------------------------------------------------------
--spec load(bpf_prog_type(), binary()) -> {'ok', prog()} | {'error', atom()}.
+-spec load(bpf_prog_type(), binary()) ->
+    {'ok', prog()} | {'ok', prog(), string()} | {'error', atom()} | {'error', atom(), string()}.
 load(ProgType, BinProg) ->
     load(ProgType, BinProg, []).
 
