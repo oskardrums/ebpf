@@ -6,18 +6,12 @@ Erlang eBPF library
 
 Overview
 --------
-`ebpf` facilitates basic interaction with the Linux eBPF system from Erlang.
-Three modules are currently included:
-* `ebpf_user` contains NIFs that wrap the Linux native API to eBPF, ultimately calling the `bpf(2)` syscall
-* `ebpf_kern` contains functions that generate eBPF instructions according to different parameters
-* `ebpf_asm` contains eBPF assembly and disassembly routines
-
-Status
-------
-
-This library is not yet feature complete nor is it extensively tested.
-
-The current API should remain pretty stable, while it is planned to be expanded to expose more eBPF functionalities and perhaps also include a higher lever interface a la `gen_bpf`.
+`ebpf` is an Erlang library for creating and interacting with eBPF programs.
+These modules are currently included:
+* `ebpf_user`: load eBPF programs and use loaded programs
+* `ebpf_kern`: generate eBPF instructions according to different parameters
+* `ebpf_asm`: eBPF assembly and disassembly routines
+* `ebpf_maps`: userspace API to eBPF maps, mimics the Erlang/OTP `maps` interface with eBPF maps
 
 Documentation
 -------------
@@ -25,16 +19,6 @@ Documentation
     $ rebar3 edoc
 
 The documentation for the latest version can be browsed at https://oskardrums.github.io/ebpf/
-
-Build
------
-
-    $ rebar3 compile
-    
-Test
-----
-
-    $ rebar3 do ct, proper
 
 Usage
 -----
@@ -65,6 +49,17 @@ For projects that build with `rebar3`, add `ebpf` as a dependency in `rebar.conf
 ```erlang
 {deps, [{ebpf, {git, "https://github.com/oskardrums/ebpf.git", "main"}}]}.
 ```
+
+Build
+-----
+
+    $ rebar3 compile
+
+Test
+----
+
+    $ rebar3 do ct, proper
+
 
 Contributions
 ------------
