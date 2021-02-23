@@ -14,6 +14,8 @@
     get/2,
     get/3,
     put/3,
+    iterator/1,
+    next/1,
     remove/2,
     close/1,
     fd/1
@@ -74,7 +76,10 @@
 -opaque ebpf_map() :: #bpf_map{}.
 %% An active eBPF map as returned by {@link new/5}.
 
--export_type([ebpf_map/0]).
+-opaque iterator() :: {key(), ebpf_map()}.
+%% See [http://erlang.org/doc/man/maps.html#type-iterator] and {@link iterator/1}.
+
+-export_type([ebpf_map/0, iterator/0]).
 
 %%%===================================================================
 %%% API
@@ -138,6 +143,7 @@ new(Type, KeySize, ValueSize, MaxEntries, Options) ->
         {ok, Fd} ->
             #bpf_map{
                 fd = Fd,
+                type = Type,
                 key_size = KeySize,
                 value_size = ValueSize,
                 max_entries = MaxEntries
@@ -177,7 +183,7 @@ get(
         key_size = KeySize,
         value_size = ValueSize
     } = _Map
-) when is_binary(Key), byte_size(Key) == KeySize ->
+) ->
     case
         ebpf_lib:bpf_lookup_map_element(
             Fd,
@@ -205,11 +211,11 @@ get(
         value_size = ValueSize
     },
     Default
-) when byte_size(Key) == KeySize ->
+) ->
     case
         ebpf_lib:bpf_lookup_map_element(
             Fd,
-            Key,
+            to_binary(Key, KeySize),
             ValueSize,
             0
         )
@@ -235,9 +241,47 @@ put(
         key_size = KeySize,
         value_size = ValueSize
     } = Map
-) when byte_size(Value) == ValueSize ->
-    ok = ebpf_lib:bpf_update_map_element(Fd, to_binary(Key, KeySize), Value, 0),
+) ->
+    ok = ebpf_lib:bpf_update_map_element(
+        Fd,
+        to_binary(Key, KeySize),
+        to_binary(Value, ValueSize),
+        0
+    ),
     Map.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns a map iterator `Iterator' that can be used by {@link next/1}
+%% to traverse the key-value associations in a map.
+%% @end
+%%--------------------------------------------------------------------
+-spec iterator(ebpf_map()) -> iterator().
+iterator(Map) -> {<<>>, Map}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns the next key-value association in `Iterator' and a new
+%% iterator for the remaining associations in the iterator.
+%%
+%% If `Key' is currently the last key in the map, `none' is returned.
+%%
+%% Note: unlike Erlang/OTP built-in maps, eBPF maps can be altered
+%% by kernelspace-resident eBPF programs, hence even if this function
+%% returns `none' it does not mean that it will always return `none'.
+%% @end
+%%--------------------------------------------------------------------
+-spec next(iterator()) -> {key(), value(), iterator()} | none.
+next({<<>>, Map} = _Iterator) ->
+    case ebpf_lib:bpf_get_map_first_key(fd(Map), Map#bpf_map.key_size) of
+        {ok, NextKey} -> {NextKey, ebpf_maps:get(NextKey, Map), {NextKey, Map}};
+        {error, enoent} -> none
+    end;
+next({Key, Map} = _Iterator) ->
+    case ebpf_lib:bpf_get_map_next_key(fd(Map), to_binary(Key, Map#bpf_map.key_size)) of
+        {ok, NextKey} -> {NextKey, ebpf_maps:get(NextKey, Map), {NextKey, Map}};
+        {error, enoent} -> none
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -306,7 +350,7 @@ read_map_options([], Flags) ->
 to_binary(Bin, Size) when is_binary(Bin), byte_size(Bin) == Size ->
     Bin;
 to_binary(Int, Size) when is_integer(Int) ->
-    <<Int:(Size * 8)>>.
+    <<Int:(Size * 8)/little-integer>>.
 
 -spec type_to_int(type()) -> integer().
 type_to_int(unspec) -> 0;

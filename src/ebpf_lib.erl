@@ -21,6 +21,7 @@
     bpf_lookup_map_element/4,
     bpf_delete_map_element/2,
     bpf_get_map_next_key/2,
+    bpf_get_map_first_key/2,
     bpf_test_program/4,
     bpf_close/1
 ]).
@@ -67,25 +68,29 @@ bpf_create_map(_Type, _KeySize, _ValueSize, _MaxEntries, _Flags) ->
 
 -spec bpf_update_map_element(integer(), binary(), binary(), non_neg_integer()) ->
     'ok' | {'error', atom()}.
-bpf_update_map_element(_Map, _Key, _Value, _Flags) ->
+bpf_update_map_element(_MapFd, _Key, _Value, _Flags) ->
     not_loaded(?LINE).
 
 -spec bpf_lookup_map_element(integer(), binary(), non_neg_integer(), non_neg_integer()) ->
     {'ok', binary()} | {'error', atom()}.
-bpf_lookup_map_element(_Map, _Key, _ValueSize, _Flags) ->
+bpf_lookup_map_element(_MapFd, _Key, _ValueSize, _Flags) ->
     not_loaded(?LINE).
 
 -spec bpf_delete_map_element(integer(), binary()) -> 'ok' | {'error', atom()}.
-bpf_delete_map_element(_Map, _Key) ->
+bpf_delete_map_element(_MapFd, _Key) ->
     not_loaded(?LINE).
 
 -spec bpf_get_map_next_key(integer(), binary()) -> {'ok', binary()} | {'error', atom()}.
-bpf_get_map_next_key(_Map, _Key) ->
+bpf_get_map_next_key(_MapFd, _Key) ->
+    not_loaded(?LINE).
+
+-spec bpf_get_map_first_key(integer(), non_neg_integer()) -> {'ok', binary()} | {'error', atom()}.
+bpf_get_map_first_key(_MapFd, _KeySize) ->
     not_loaded(?LINE).
 
 -spec bpf_test_program(integer(), integer(), binary(), non_neg_integer()) ->
     {'ok', non_neg_integer(), binary(), non_neg_integer()} | {'error', atom()}.
-bpf_test_program(_Prog, _Repeat, _Data, _DataOutSize) ->
+bpf_test_program(_ProgFd, _Repeat, _Data, _DataOutSize) ->
     not_loaded(?LINE).
 
 -spec bpf_close(integer()) -> 'ok' | {'error', atom()}.

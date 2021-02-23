@@ -173,6 +173,7 @@ groups() ->
         {ebpf_user_ct, [sequence], [
             test_user_create_map_hash_1,
             test_user_map_hash_1,
+            test_user_map_hash_2,
             test_example_from_ebpf_kern_docs_1,
             test_user_test_program_1,
             test_user_test_program_2,
@@ -320,7 +321,38 @@ test_user_map_hash_1(_Config) ->
             Default = <<"leet">>,
             Default = ebpf_maps:get(Key, Map1, Default),
             Map3 = ebpf_maps:remove(Key, Map2),
+
             ok = ebpf_maps:close(Map3)
+    end.
+test_user_map_hash_2() -> [].
+test_user_map_hash_2(_Config) ->
+    Map = lists:foldl(
+        fun({K, V}, MapIn) -> ebpf_maps:put(K, V, MapIn) end,
+        ebpf_maps:new(hash, 4, 4, 256),
+        lists:zip(lists:seq(0, 255), lists:seq(256, 511))
+    ),
+    Iterator1 = ebpf_maps:iterator(Map),
+    ok = test_user_map_hash_2_inner(ebpf_maps:next(Iterator1), 256),
+    Iterator2 = ebpf_maps:iterator(Map),
+    none = ebpf_maps:next(Iterator2),
+    ok = ebpf_maps:close(Map).
+
+test_user_map_hash_2_inner(none, 0) ->
+    ok;
+test_user_map_hash_2_inner(none, Remaining) ->
+    {error, Remaining};
+test_user_map_hash_2_inner(Arg, 0) ->
+    {error, Arg};
+test_user_map_hash_2_inner(
+    {<<Key:32/little-integer>>, <<Value:32/little-integer>>, {_, Map} = Iterator},
+    Remaining
+) ->
+    if
+        Key == (Value - 256) ->
+            ebpf_maps:remove(Key, Map),
+            test_user_map_hash_2_inner(ebpf_maps:next(Iterator), Remaining - 1);
+        true ->
+            {error, Key, Value}
     end.
 
 test_user_test_program_1() -> [].
