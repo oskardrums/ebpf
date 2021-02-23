@@ -14,6 +14,7 @@
     get/2,
     get/3,
     put/3,
+    remove/2,
     close/1,
     fd/1
 ]).
@@ -221,6 +222,8 @@ get(
 %% @doc
 %% Returns the value associated with `Key' in eBPF map `Map' if `Map'
 %% contains `Key', otherwise returns `Default'.
+%%
+%% See also [http://erlang.org/doc/man/maps.html#put-3].
 %% @end
 %%--------------------------------------------------------------------
 -spec put(key(), value(), ebpf_map()) -> ebpf_map().
@@ -235,6 +238,22 @@ put(
 ) when byte_size(Value) == ValueSize ->
     ok = ebpf_lib:bpf_update_map_element(Fd, to_binary(Key, KeySize), Value, 0),
     Map.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Removes the `Key', if it exists, and its associated value from `Map1'
+%% and returns a new map `Map2' without key `Key'.
+%%
+%% See also [http://erlang.org/doc/man/maps.html#remove-2].
+%% @end
+%%--------------------------------------------------------------------
+-spec remove(key(), ebpf_map()) -> ebpf_map().
+remove(Key, #bpf_map{fd = Fd, key_size = KeySize} = Map1) ->
+    case ebpf_lib:bpf_delete_map_element(Fd, to_binary(Key, KeySize)) of
+        ok -> Map1;
+        {error, enoent} -> Map1;
+        {error, Other} -> {error, Other}
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc

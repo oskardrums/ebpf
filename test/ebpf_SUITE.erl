@@ -316,7 +316,11 @@ test_user_map_hash_1(_Config) ->
             Value = <<5, 6, 7, 8>>,
             Map1 = ebpf_maps:put(Key, Value, Map0),
             Value = ebpf_maps:get(Key, Map1),
-            ok = ebpf_maps:close(Map1)
+            Map2 = ebpf_maps:remove(Key, Map1),
+            Default = <<"leet">>,
+            Default = ebpf_maps:get(Key, Map1, Default),
+            Map3 = ebpf_maps:remove(Key, Map2),
+            ok = ebpf_maps:close(Map3)
     end.
 
 test_user_test_program_1() -> [].
