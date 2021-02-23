@@ -326,14 +326,17 @@ test_user_map_hash_1(_Config) ->
     end.
 test_user_map_hash_2() -> [].
 test_user_map_hash_2(_Config) ->
+    Keys = lists:seq(0, 255),
+    Values = lists:seq(256, 511),
     Map = lists:foldl(
         fun({K, V}, MapIn) -> ebpf_maps:put(K, V, MapIn) end,
         ebpf_maps:new(hash, 4, 4, 256),
-        lists:zip(lists:seq(0, 255), lists:seq(256, 511))
+        lists:zip(Keys, Values)
     ),
     Iterator1 = ebpf_maps:iterator(Map),
     ok = test_user_map_hash_2_inner(ebpf_maps:next(Iterator1), 256),
-    Iterator2 = ebpf_maps:iterator(Map),
+    Map2 = lists:foldl(fun(K, MapIn) -> ebpf_maps:remove(K, MapIn) end, Map, Keys),
+    Iterator2 = ebpf_maps:iterator(Map2),
     none = ebpf_maps:next(Iterator2),
     ok = ebpf_maps:close(Map).
 
@@ -344,12 +347,11 @@ test_user_map_hash_2_inner(none, Remaining) ->
 test_user_map_hash_2_inner(Arg, 0) ->
     {error, Arg};
 test_user_map_hash_2_inner(
-    {<<Key:32/little-integer>>, <<Value:32/little-integer>>, {_, Map} = Iterator},
+    {<<Key:32/little-integer>>, <<Value:32/little-integer>>, Iterator},
     Remaining
 ) ->
     if
         Key == (Value - 256) ->
-            ebpf_maps:remove(Key, Map),
             test_user_map_hash_2_inner(ebpf_maps:next(Iterator), Remaining - 1);
         true ->
             {error, Key, Value}
