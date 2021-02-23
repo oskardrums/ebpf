@@ -5,7 +5,7 @@ BASEDIR := $(abspath $(CURDIR)/..)
 
 # PROJECT ?= $(notdir $(BASEDIR))
 # PROJECT := $(strip $(PROJECT))
-PROJECT = ebpf_user
+PROJECT = ebpf_lib
 
 ERTS_INCLUDE_DIR ?= $(shell erl -noshell -s init stop -eval "io:format(\"~ts/erts-~ts/include/\", [code:root_dir(), erlang:system_info(version)]).")
 ERL_INTERFACE_INCLUDE_DIR ?= $(shell erl -noshell -s init stop -eval "io:format(\"~ts\", [code:lib_dir(erl_interface, include)]).")

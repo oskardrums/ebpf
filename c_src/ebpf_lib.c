@@ -1135,4 +1135,4 @@ static ErlNifFunc nif_funcs[] = {
 				 {"bpf_test_program", 4, ebpf_test_program4, 0}
 };
 
-ERL_NIF_INIT(ebpf_user, nif_funcs, ebpf_nif_lib_load, NULL, ebpf_nif_lib_upgrade, NULL);
+ERL_NIF_INIT(ebpf_lib, nif_funcs, ebpf_nif_lib_load, NULL, ebpf_nif_lib_upgrade, NULL);

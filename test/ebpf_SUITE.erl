@@ -301,28 +301,22 @@ readme_example_1(_Config) ->
 
 test_user_create_map_hash_1() -> [].
 test_user_create_map_hash_1(_Config) ->
-    case ebpf_user:create_map(hash, 4, 4, 255, 0) of
-        {ok, Map} -> ebpf_user:close(Map);
-        {error, eperm} -> {skip, eperm};
-        Other -> {error, Other}
+    case ebpf_maps:new(hash, 4, 4, 255) of
+        {error, Reason} -> {error, Reason};
+        Map -> ebpf_maps:close(Map)
     end.
 
 test_user_map_hash_1() -> [].
 test_user_map_hash_1(_Config) ->
-    case ebpf_user:create_map(hash, 4, 4, 5, 0) of
-        {ok, Map} ->
+    case ebpf_maps:new(hash, 4, 4, 5) of
+        {error, Reason} ->
+            {error, Reason};
+        Map0 ->
             Key = <<1, 2, 3, 4>>,
             Value = <<5, 6, 7, 8>>,
-            Flags = 0,
-            ok = ebpf_user:update_map_element(Map, Key, Value, Flags),
-            {ok, Key} = ebpf_user:get_map_next_key(Map, <<"None">>),
-            {ok, Value} = ebpf_user:lookup_map_element(Map, Key, 4, 0),
-            ok = ebpf_user:delete_map_element(Map, Key),
-            ok = ebpf_user:close(Map);
-        {error, eperm} ->
-            {skip, eperm};
-        Other ->
-            {error, Other}
+            Map1 = ebpf_maps:put(Key, Value, Map0),
+            Value = ebpf_maps:get(Key, Map1),
+            ok = ebpf_maps:close(Map1)
     end.
 
 test_user_test_program_1() -> [].
@@ -498,8 +492,8 @@ test_load_cf_ttl_1(_Config) ->
     %   "12: (85) call bpf_map_lookup_elem#1\n"
     %   "13: safe\n"
     %   "processed 33 insns (limit 131072), stack depth 16\n",
-    {ok, Map} = ebpf_user:create_map(hash, 4, 8, 4, 0),
-    MapFd = ebpf_user:fd(Map),
+    Map = ebpf_maps:new(hash, 4, 8, 4),
+    MapFd = ebpf_maps:fd(Map),
     Instructions = lists:flatten([
         ebpf_kern:ldx_mem(w, 0, 1, 16),
         ebpf_kern:jmp64_imm(eq, 0, 16#86DD, 3),
@@ -534,12 +528,13 @@ test_load_cf_ttl_1(_Config) ->
         sleepable
     ]),
     Expected = lists:sublist(Desc, length(Expected)),
-    ok = ebpf_user:close(Prog).
+    ok = ebpf_user:close(Prog),
+    ok = ebpf_maps:close(Map).
 
 test_load_cf_ttl_2() -> [].
 test_load_cf_ttl_2(_Config) ->
-    {ok, Map} = ebpf_user:create_map(hash, 4, 8, 4, 0),
-    MapFd = ebpf_user:fd(Map),
+    Map = ebpf_maps:new(hash, 4, 8, 4),
+    MapFd = ebpf_maps:fd(Map),
     Instructions = lists:flatten([
         ebpf_kern:ldx_mem(w, 0, 1, 16),
         ebpf_kern:jmp64_imm(eq, 0, 16#86DD, 3),
@@ -573,4 +568,5 @@ test_load_cf_ttl_2(_Config) ->
         ebpf_asm:assemble(Instructions),
         [{log_buffer_size, 0}]
     ),
-    ok = ebpf_user:close(Prog).
+    ok = ebpf_user:close(Prog),
+    ok = ebpf_maps:close(Map).

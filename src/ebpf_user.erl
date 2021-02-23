@@ -21,11 +21,6 @@
     load/2,
     load/3,
     test/4,
-    create_map/5,
-    update_map_element/4,
-    lookup_map_element/4,
-    delete_map_element/2,
-    get_map_next_key/2,
     attach_socket_filter/2,
     detach_socket_filter/1,
     attach_xdp/2,
@@ -34,12 +29,7 @@
     fd/1
 ]).
 
--on_load(init/0).
-
--define(APPNAME, ebpf).
--define(LIBNAME, ?MODULE).
-
--type bpf_prog_type() ::
+-type prog_type() ::
     'unspec'
     | 'socket_filter'
     | 'kprobe'
@@ -73,42 +63,6 @@
     | 'sk_lookup'.
 %% An `atom' used to specify the type of an eBPF program, see {@link load/2}
 
--type bpf_map_type() ::
-    'unspec'
-    | 'hash'
-    | 'array'
-    | 'prog_array'
-    | 'perf_event_array'
-    | 'percpu_hash'
-    | 'percpu_array'
-    | 'stack_trace'
-    | 'cgroup_array'
-    | 'lru_hash'
-    | 'lru_percpu_hash'
-    | 'lpm_trie'
-    | 'array_of_maps'
-    | 'hash_of_maps'
-    | 'devmap'
-    | 'sockmap'
-    | 'cpumap'
-    | 'xskmap'
-    | 'sockhash'
-    | 'cgroup_storage'
-    | 'reuseport_sockarray'
-    | 'percpu_cgroup_storage'
-    | 'queue'
-    | 'stack'
-    | 'sk_storage'
-    | 'devmap_hash'
-    | 'struct_ops'
-    | 'ringbuf'
-    | 'inode_storage'
-    | 'task_storage'.
-%% An `atom' used to specify the type of an eBPF map, see {@link create_map/4}
-
--opaque bpf_map() :: integer().
-%% An open eBPF map as returned by {@link create_map/4}.
-
 -opaque prog() :: integer().
 %% A loaded eBPF program as returned by {@link load/2}.
 
@@ -117,7 +71,7 @@
     | {'log_buffer_size', non_neg_integer()}
     | {'license', string()}.
 
--export_type([bpf_map/0, prog/0]).
+-export_type([prog/0]).
 
 %%%===================================================================
 %%% API
@@ -153,11 +107,11 @@
 %% Defaults to `""'.
 %% @end
 %%--------------------------------------------------------------------
--spec load(bpf_prog_type(), binary(), [load_option()]) ->
+-spec load(prog_type(), binary(), [load_option()]) ->
     {'ok', prog()} | {'ok', prog(), string()} | {'error', atom()} | {'error', atom(), string()}.
 load(ProgType, BinProg, Options) ->
     {Flags, LogBufferSize, License} = read_load_options(Options),
-    bpf_load_program(
+    ebpf_lib:bpf_load_program(
         bpf_prog_type_to_int(ProgType),
         BinProg,
         LogBufferSize,
@@ -170,7 +124,7 @@ load(ProgType, BinProg, Options) ->
 %% Same as {@link load/3}, with default options.
 %% @end
 %%--------------------------------------------------------------------
--spec load(bpf_prog_type(), binary()) ->
+-spec load(prog_type(), binary()) ->
     {'ok', prog()} | {'ok', prog(), string()} | {'error', atom()} | {'error', atom(), string()}.
 load(ProgType, BinProg) ->
     load(ProgType, BinProg, []).
@@ -200,99 +154,12 @@ load(ProgType, BinProg) ->
     {'ok', Ret :: non_neg_integer(), DataOut :: binary(), Duration :: non_neg_integer()}
     | {'error', atom()}.
 test(Prog, Repeat, Data, DataOutSize) ->
-    bpf_test_program(
+    ebpf_lib:bpf_test_program(
         Prog,
         Repeat,
         Data,
         DataOutSize
     ).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Creates a new eBPF map.
-%%
-%% If successful, the returned map can be passed to eBPF programs via
-%% {@link ebpf_kern:ld_map_fd/2} and manipulated from userspace via the
-%% `*_map_element' functions in this module.
-%%
-%% KeySize and ValueSize are given in octets.
-%% @end
-%%--------------------------------------------------------------------
--spec create_map(
-    Type :: bpf_map_type(),
-    KeySize :: integer(),
-    ValueSize :: integer(),
-    MaxEntries :: integer(),
-    Flags :: non_neg_integer()
-) -> {'ok', bpf_map()} | {'error', atom()}.
-create_map(Type, KeySize, ValueSize, MaxEntries, Flags) ->
-    bpf_create_map(
-        bpf_map_type_to_int(Type),
-        KeySize,
-        ValueSize,
-        MaxEntries,
-        Flags
-    ).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Sets the value associated with Key in eBPF map Map to Value.
-%% @end
-%%--------------------------------------------------------------------
--spec update_map_element(
-    bpf_map(),
-    binary(),
-    binary(),
-    non_neg_integer()
-) -> 'ok' | {'error', atom()}.
-update_map_element(Map, Key, Value, Flags) ->
-    bpf_update_map_element(
-        Map,
-        Key,
-        Value,
-        Flags
-    ).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Retrieves the value associated with Key in eBPF map Map.
-%% @end
-%%--------------------------------------------------------------------
--spec lookup_map_element(
-    bpf_map(),
-    binary(),
-    non_neg_integer(),
-    non_neg_integer()
-) -> {'ok', binary()} | {'error', atom()}.
-lookup_map_element(Map, Key, ValueSize, Flags) ->
-    bpf_lookup_map_element(
-        Map,
-        Key,
-        ValueSize,
-        Flags
-    ).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Deletes the value associated with Key in eBPF map Map.
-%% @end
-%%--------------------------------------------------------------------
--spec delete_map_element(bpf_map(), binary()) -> 'ok' | {'error', atom()}.
-delete_map_element(Map, Key) ->
-    bpf_delete_map_element(Map, Key).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Retries the next key after Key in the eBPF map Map.
-%%
-%% If Key is not in Map, returns the first key in Map.
-%%
-%% If Key is the last key in Map, returns `{error, enoent}'.
-%% @end
-%%--------------------------------------------------------------------
--spec get_map_next_key(bpf_map(), binary()) -> {'ok', binary()} | {'error', atom()}.
-get_map_next_key(Map, Key) ->
-    bpf_get_map_next_key(Map, Key).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -303,7 +170,7 @@ get_map_next_key(Map, Key) ->
 -spec attach_socket_filter(socket:socket(), prog()) -> 'ok' | {'error', atom()}.
 attach_socket_filter(Sock, Prog) ->
     {ok, SockFd} = socket:getopt(Sock, otp, fd),
-    bpf_attach_socket_filter(
+    ebpf_lib:bpf_attach_socket_filter(
         SockFd,
         Prog
     ).
@@ -316,7 +183,7 @@ attach_socket_filter(Sock, Prog) ->
 -spec detach_socket_filter(socket:socket()) -> 'ok' | {'error', atom()}.
 detach_socket_filter(Sock) ->
     {ok, SockFd} = socket:getopt(Sock, otp, fd),
-    bpf_detach_socket_filter(SockFd).
+    ebpf_lib:bpf_detach_socket_filter(SockFd).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -327,11 +194,11 @@ detach_socket_filter(Sock) ->
 -spec attach_xdp(string() | non_neg_integer(), prog()) -> 'ok' | {'error', atom()}.
 attach_xdp(Interface, Prog) when is_integer(Interface) ->
     % Interface is an interface index
-    bpf_attach_xdp(Interface, Prog);
+    ebpf_lib:bpf_attach_xdp(Interface, Prog);
 attach_xdp(Interface, Prog) when is_list(Interface) ->
     % Interface is an interface name
     {ok, IfIndex} = net:if_name2index(Interface),
-    bpf_attach_xdp(IfIndex, Prog).
+    ebpf_lib:bpf_attach_xdp(IfIndex, Prog).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -340,117 +207,32 @@ attach_xdp(Interface, Prog) when is_list(Interface) ->
 %%--------------------------------------------------------------------
 -spec detach_xdp(string() | non_neg_integer()) -> 'ok' | {'error', atom()}.
 detach_xdp(Interface) when is_integer(Interface) ->
-    bpf_attach_xdp(Interface, -1);
+    ebpf_lib:bpf_attach_xdp(Interface, -1);
 detach_xdp(Interface) when is_list(Interface) ->
     {ok, IfIndex} = net:if_name2index(Interface),
-    bpf_attach_xdp(IfIndex, -1).
+    ebpf_lib:bpf_attach_xdp(IfIndex, -1).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Closes an eBPF map or program.
+%% Closes `Prog'.
 %% @end
 %%--------------------------------------------------------------------
--spec close(bpf_map() | prog()) -> 'ok' | {'error', atom()}.
-close(ProgOrMap) ->
-    bpf_close(ProgOrMap).
+-spec close(prog()) -> 'ok' | {'error', atom()}.
+close(Prog) ->
+    ebpf_lib:bpf_close(Prog).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns a File Descriptor for eBPF program or map.
-%%
-%% Can be used for passing a map to eBPF programs, e.g. via {@link ebpf_kern:ld_map_fd/2}.
+%% Returns a File Descriptor for `Prog'.
 %% @end
 %%--------------------------------------------------------------------
--spec fd(bpf_map() | prog()) -> non_neg_integer() | {'error', atom()}.
-fd(ProgOrMap) -> ProgOrMap.
+-spec fd(prog()) -> non_neg_integer().
+fd(Prog) -> Prog.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
-%%%-------------------------------------------------------------------
-%%% NIFs and NIF related functions
-%%%-------------------------------------------------------------------
-
--spec bpf_load_program(
-    non_neg_integer(),
-    binary(),
-    non_neg_integer(),
-    string(),
-    non_neg_integer()
-) ->
-    {'ok', non_neg_integer()}
-    | {'ok', non_neg_integer(), string()}
-    | {'error', atom()}
-    | {'error', atom(), string()}.
-bpf_load_program(_ProgType, _BinProg, _LogBufferSize, _License, _Flags) ->
-    not_loaded(?LINE).
-
--spec bpf_attach_socket_filter(non_neg_integer(), non_neg_integer()) -> 'ok' | {'error', atom()}.
-bpf_attach_socket_filter(_SockFd, _ProgFd) ->
-    not_loaded(?LINE).
-
--spec bpf_detach_socket_filter(non_neg_integer()) -> 'ok' | {'error', atom()}.
-bpf_detach_socket_filter(_SockFd) ->
-    not_loaded(?LINE).
-
--spec bpf_attach_xdp(non_neg_integer(), integer()) -> 'ok' | {'error', atom()}.
-bpf_attach_xdp(_IfIndex, _ProgFd) ->
-    not_loaded(?LINE).
-
--spec bpf_create_map(non_neg_integer(), integer(), integer(), integer(), non_neg_integer()) ->
-    {'ok', non_neg_integer()} | {'error', atom()}.
-bpf_create_map(_Type, _KeySize, _ValueSize, _MaxEntries, _Flags) ->
-    not_loaded(?LINE).
-
--spec bpf_update_map_element(bpf_map(), binary(), binary(), non_neg_integer()) ->
-    'ok' | {'error', atom()}.
-bpf_update_map_element(_Map, _Key, _Value, _Flags) ->
-    not_loaded(?LINE).
-
--spec bpf_lookup_map_element(bpf_map(), binary(), non_neg_integer(), non_neg_integer()) ->
-    {'ok', binary()} | {'error', atom()}.
-bpf_lookup_map_element(_Map, _Key, _ValueSize, _Flags) ->
-    not_loaded(?LINE).
-
--spec bpf_delete_map_element(bpf_map(), binary()) -> 'ok' | {'error', atom()}.
-bpf_delete_map_element(_Map, _Key) ->
-    not_loaded(?LINE).
-
--spec bpf_get_map_next_key(bpf_map(), binary()) -> {'ok', binary()} | {'error', atom()}.
-bpf_get_map_next_key(_Map, _Key) ->
-    not_loaded(?LINE).
-
--spec bpf_test_program(prog(), integer(), binary(), non_neg_integer()) ->
-    {'ok', non_neg_integer(), binary(), non_neg_integer()} | {'error', atom()}.
-bpf_test_program(_Prog, _Repeat, _Data, _DataOutSize) ->
-    not_loaded(?LINE).
-
--spec bpf_close(integer()) -> 'ok' | {'error', atom()}.
-bpf_close(_Fd) ->
-    not_loaded(?LINE).
-
-init() ->
-    SoName =
-        case code:priv_dir(?APPNAME) of
-            {error, bad_name} ->
-                case filelib:is_dir(filename:join(["..", priv])) of
-                    true ->
-                        filename:join(["..", priv, ?LIBNAME]);
-                    _ ->
-                        filename:join([priv, ?LIBNAME])
-                end;
-            Dir ->
-                filename:join(Dir, ?LIBNAME)
-        end,
-    erlang:load_nif(SoName, 0).
-
-not_loaded(Line) ->
-    erlang:nif_error({not_loaded, [{module, ?MODULE}, {line, Line}]}).
-
-%%%-------------------------------------------------------------------
-%%% Other internal functions
-%%%-------------------------------------------------------------------
 -spec read_load_options([load_option()]) -> {non_neg_integer(), non_neg_integer(), string()}.
 read_load_options(Options) ->
     read_load_options(Options, {0, 0, ""}).
@@ -469,7 +251,7 @@ read_load_options([{license, License} | More], {Flags0, LogBufferSize0, _License
 read_load_options([], Acc) ->
     Acc.
 
--spec bpf_prog_type_to_int(bpf_prog_type()) -> ebpf_kern:bpf_imm().
+-spec bpf_prog_type_to_int(prog_type()) -> ebpf_kern:bpf_imm().
 bpf_prog_type_to_int(unspec) -> 0;
 bpf_prog_type_to_int(socket_filter) -> 1;
 bpf_prog_type_to_int(kprobe) -> 2;
@@ -501,35 +283,3 @@ bpf_prog_type_to_int(struct_ops) -> 27;
 bpf_prog_type_to_int(ext) -> 28;
 bpf_prog_type_to_int(lsm) -> 29;
 bpf_prog_type_to_int(sk_lookup) -> 30.
-
--spec bpf_map_type_to_int(bpf_map_type()) -> ebpf_kern:bpf_imm().
-bpf_map_type_to_int(unspec) -> 0;
-bpf_map_type_to_int(hash) -> 1;
-bpf_map_type_to_int(array) -> 2;
-bpf_map_type_to_int(prog_array) -> 3;
-bpf_map_type_to_int(perf_event_array) -> 4;
-bpf_map_type_to_int(percpu_hash) -> 5;
-bpf_map_type_to_int(percpu_array) -> 6;
-bpf_map_type_to_int(stack_trace) -> 7;
-bpf_map_type_to_int(cgroup_array) -> 8;
-bpf_map_type_to_int(lru_hash) -> 9;
-bpf_map_type_to_int(lru_percpu_hash) -> 10;
-bpf_map_type_to_int(lpm_trie) -> 11;
-bpf_map_type_to_int(array_of_maps) -> 12;
-bpf_map_type_to_int(hash_of_maps) -> 13;
-bpf_map_type_to_int(devmap) -> 14;
-bpf_map_type_to_int(sockmap) -> 15;
-bpf_map_type_to_int(cpumap) -> 16;
-bpf_map_type_to_int(xskmap) -> 17;
-bpf_map_type_to_int(sockhash) -> 18;
-bpf_map_type_to_int(cgroup_storage) -> 19;
-bpf_map_type_to_int(reuseport_sockarray) -> 20;
-bpf_map_type_to_int(percpu_cgroup_storage) -> 21;
-bpf_map_type_to_int(queue) -> 22;
-bpf_map_type_to_int(stack) -> 23;
-bpf_map_type_to_int(sk_storage) -> 24;
-bpf_map_type_to_int(devmap_hash) -> 25;
-bpf_map_type_to_int(struct_ops) -> 26;
-bpf_map_type_to_int(ringbuf) -> 27;
-bpf_map_type_to_int(inode_storage) -> 28;
-bpf_map_type_to_int(task_storage) -> 29.
