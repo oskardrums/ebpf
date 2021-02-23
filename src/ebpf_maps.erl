@@ -164,8 +164,9 @@ new(Type, KeySize, ValueSize, MaxEntries) ->
 %% @doc
 %% Returns the value associated with `Key' in eBPF map `Map' if `Map'
 %% contains `Key'.
+%%
+%% See also [http://erlang.org/doc/man/maps.html#get-2].
 %% @end
-%% @see maps:get/2
 %%--------------------------------------------------------------------
 -spec get(key(), ebpf_map()) -> value().
 get(
@@ -193,7 +194,6 @@ get(
 %% Returns the value associated with `Key' in eBPF map `Map' if `Map'
 %% contains `Key', otherwise returns `Default'.
 %% @end
-%% @see maps:get/3
 %%--------------------------------------------------------------------
 -spec get(key(), ebpf_map(), value()) -> value().
 get(
@@ -222,7 +222,6 @@ get(
 %% Returns the value associated with `Key' in eBPF map `Map' if `Map'
 %% contains `Key', otherwise returns `Default'.
 %% @end
-%% @see maps:put/3
 %%--------------------------------------------------------------------
 -spec put(key(), value(), ebpf_map()) -> ebpf_map().
 put(
