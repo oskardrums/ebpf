@@ -2,6 +2,10 @@
 %%% @author moskar <moskar.drummer@gmail.com>
 %%% @copyright (C) 2021, moskar
 %%% @doc
+%%% Creating and using eBPF maps from userspace.
+%%%
+%%% This module contains an API for eBPF maps that mimics the built-in
+%%% `maps' module.
 %%% @end
 %%% Created :  7 Feb 2021 by user <moskar.drummer@gmail.home>
 %%%-------------------------------------------------------------------
