@@ -34,12 +34,12 @@ BinProg = ebpf_asm:assemble([
 
 {ok, FilterProg} = ebpf_user:load(socket_filter, BinProg),
 {ok, Sock} = socket:open(inet, stream, {raw, 0}),
-ok = ebpf_user:attach_socket_filter(Sock, FilterProg), % All new input to Sock is dropped
+ok = ebpf_user:attach(Sock, FilterProg), % All new input to Sock is dropped
 ok = ebpf_user:detach_socket_filter(Sock), % Sock is back to normal and FilterProg can be
 ok = ebpf_user:close(FilterProg), % FilterProg is unloaded from the kernel
 
 {ok, XdpProg} = ebpf_user:load(xdp, BinProg),
-ok = ebpf_user:attach_xdp("lo", XdpProg), % Try pinging 127.0.0.1, go ahead
+ok = ebpf_user:attach("lo", XdpProg), % Try pinging 127.0.0.1, go ahead
 ok = ebpf_user:detach_xdp("lo"), % Now, that's better :)
 ok = ebpf_user:close(XdpProg).
 ```
