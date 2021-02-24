@@ -246,12 +246,7 @@ simple_socket_filter_1() ->
 simple_socket_filter_1(_Config) ->
     {ok, Prog} = ebpf_user:load(
         socket_filter,
-        ebpf_asm:assemble([
-            % R0 = 0
-            ebpf_kern:mov64_imm(r0, 0),
-            % return R0
-            ebpf_kern:exit_insn()
-        ])
+        ebpf_asm:assemble(ebpf_kern:return(0))
     ),
     {ok, Sock} = socket:open(inet, stream, {raw, 0}),
     ok = ebpf_user:attach(Sock, Prog),
@@ -263,12 +258,7 @@ simple_xdp_1() -> [].
 simple_xdp_1(_Config) ->
     {ok, Prog} = ebpf_user:load(
         xdp,
-        ebpf_asm:assemble([
-            % R0 = 0
-            ebpf_kern:mov64_imm(r0, 0),
-            % return R0
-            ebpf_kern:exit_insn()
-        ])
+        ebpf_asm:assemble(ebpf_kern:return(0))
     ),
     ok = ebpf_user:attach("lo", Prog),
     ok = ebpf_user:detach_xdp("lo"),
@@ -276,28 +266,14 @@ simple_xdp_1(_Config) ->
 
 readme_example_1() -> [].
 readme_example_1(_Config) ->
-    BinProg = ebpf_asm:assemble([
-        % Drop all packets
-
-        % r0 = 0
-        ebpf_kern:mov64_imm(r0, 0),
-        % return r0
-        ebpf_kern:exit_insn()
-    ]),
+    BinProg = ebpf_asm:assemble(ebpf_kern:return(0)),
     {ok, FilterProg} = ebpf_user:load(socket_filter, BinProg),
     {ok, Sock} = socket:open(inet, stream, {raw, 0}),
-    % All new input to Sock is
     ok = ebpf_user:attach(Sock, FilterProg),
-    % Sock is back to normal and FilterProg can be
     ok = ebpf_user:detach_socket_filter(Sock),
-
-    % FilterProg is unloaded from the kernel
     ok = ebpf_user:close(FilterProg),
-
     {ok, XdpProg} = ebpf_user:load(xdp, BinProg),
-    % Try pinging 127.0.0.1, go ahead
     ok = ebpf_user:attach("lo", XdpProg),
-    % Now, that's better :)
     ok = ebpf_user:detach_xdp("lo"),
     ok = ebpf_user:close(XdpProg).
 
@@ -372,12 +348,7 @@ test_user_test_program_1(_Config) ->
     case
         ebpf_user:load(
             xdp,
-            ebpf_asm:assemble(
-                lists:flatten([
-                    ebpf_kern:mov64_imm(r0, -1),
-                    ebpf_kern:exit_insn()
-                ])
-            )
+            ebpf_asm:assemble(ebpf_kern:return(-1))
         )
     of
         {ok, Prog} ->
@@ -404,12 +375,7 @@ test_user_test_program_2(_Config) ->
     case
         ebpf_user:load(
             xdp,
-            ebpf_asm:assemble(
-                lists:flatten([
-                    ebpf_kern:mov64_imm(r0, -1),
-                    ebpf_kern:exit_insn()
-                ])
-            )
+            ebpf_asm:assemble(ebpf_kern:return(-1))
         )
     of
         {ok, Prog} ->

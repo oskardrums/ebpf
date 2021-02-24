@@ -14,41 +14,64 @@
 attach_ttl_bpf(Sock) ->
     {ok, Map} = ebpf_maps:new(hash, 4, 8, 4),
     MapFd = ebpf_maps:fd(Map),
-    Instructions = lists:flatten([
-        ebpf_kern:ldx_mem(w, r0, r1, 16),
-        ebpf_kern:jmp64_imm(eq, r0, 16#86DD, 3),
-        ebpf_kern:mov64_reg(r6, r1),
-        ebpf_kern:ld_abs(b, -16#100000 + 8),
-        ebpf_kern:jmp_a(2),
-        ebpf_kern:mov64_reg(r6, r1),
-        ebpf_kern:ld_abs(b, -16#100000 + 7),
-        ebpf_kern:stx_mem(w, r10, r0, -4),
-        ebpf_kern:mov64_reg(r2, r10),
-        ebpf_kern:alu64_imm(add, r2, -4),
-        ebpf_kern:ld_map_fd(r1, MapFd),
-        ebpf_kern:call_helper(map_lookup_elem),
-        ebpf_kern:jmp64_imm(eq, r0, 0, 3),
-        ebpf_kern:mov64_imm(r1, 1),
-        ebpf_kern:stx_xadd(dw, r0, r1, 0),
-        ebpf_kern:jmp_a(9),
-        ebpf_kern:ld_map_fd(r1, MapFd),
-        ebpf_kern:mov64_reg(r2, r10),
-        ebpf_kern:alu64_imm(add, r2, -4),
-        ebpf_kern:st_mem(dw, r10, -16, 1),
-        ebpf_kern:mov64_reg(r3, r10),
-        ebpf_kern:alu64_imm(add, r3, -16),
-        ebpf_kern:mov64_imm(r4, 0),
-        ebpf_kern:call_helper(map_update_elem),
-        ebpf_kern:mov64_imm(r0, -1),
-        ebpf_kern:exit_insn()
-    ]),
+    Instructions =
+        lists:flatten([
+            ebpf_kern:ldx_mem(w, r0, r1, 16),
+            ebpf_kern:branch(
+                eq,
+                r0,
+                16#86DD,
+                % If r0 == ETH_P_IPv6:
+                [
+                    ebpf_kern:mov64_reg(r6, r1),
+                    ebpf_kern:ld_abs(b, -16#100000 + 7)
+                ],
+                % else:
+                [
+                    ebpf_kern:mov64_reg(r6, r1),
+                    ebpf_kern:ld_abs(b, -16#100000 + 8)
+                ]
+            ),
+            ebpf_kern:stx_mem(w, r10, r0, -4),
+            ebpf_kern:mov64_reg(r2, r10),
+            ebpf_kern:alu64_imm(add, r2, -4),
+            ebpf_kern:ld_map_fd(r1, MapFd),
+            ebpf_kern:call_helper(map_lookup_elem),
+            ebpf_kern:branch(
+                eq,
+                r0,
+                0,
+                % If r0 == 0:
+                [
+                    ebpf_kern:ld_map_fd(r1, MapFd),
+                    ebpf_kern:mov64_reg(r2, r10),
+                    ebpf_kern:alu64_imm(add, r2, -4),
+                    ebpf_kern:st_mem(dw, r10, -16, 1),
+                    ebpf_kern:mov64_reg(r3, r10),
+                    ebpf_kern:alu64_imm(add, r3, -16),
+                    ebpf_kern:mov64_imm(r4, 0),
+                    ebpf_kern:call_helper(map_update_elem)
+                ],
+                % else:
+                [
+                    ebpf_kern:mov64_imm(r1, 1),
+                    ebpf_kern:stx_xadd(dw, r0, r1, 0)
+                ]
+            ),
+            ebpf_kern:return(-1)
+        ]),
     {ok, Prog} = ebpf_user:load(socket_filter, ebpf_asm:assemble(Instructions)),
     ok = ebpf_user:attach_socket_filter(Sock, Prog),
     {ok, Map}.
 
--spec read_ttl_bpf(ebpf_maps:ebpf_map()) -> 'empty' | {'ok', non_neg_integer()} | {error, term()}.
+-spec read_ttl_bpf(ebpf_maps:ebpf_map()) -> 'empty' | {'ok', non_neg_integer()} | {'error', term()}.
 read_ttl_bpf(Map) ->
-    read_ttl_bpf(ebpf_maps:next(ebpf_maps:iterator(Map)), error).
+    read_ttl_bpf(
+        ebpf_maps:next(
+            ebpf_maps:iterator(Map)
+        ),
+        error
+    ).
 
 -spec read_ttl_bpf('none' | {<<_:32>>, _, _}, _) -> {'ok', _}.
 read_ttl_bpf(none, Min) ->
