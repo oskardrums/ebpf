@@ -12,6 +12,7 @@ with eBPF programs.
   <li>{@section Introduction}</li>
   <li>{@section Generating eBPF code}</li>
   <li>{@section Interacting with eBPF programs}</li>
+  <li>{@section Interacting with eBPF maps}</li>
 </ol>
 
 == Introduction ==
@@ -36,5 +37,16 @@ See {@link ebpf_kern}.
 
 See {@link ebpf_user}.
 
+== Interacting with eBPF maps ==
+
+eBPF maps are the main method of keeping state and communicating with userspace
+in eBPF programs.
+The standard workflow with eBPF maps is creating and initializing a map `Map' from
+userspace, then loading an eBPF program `Prog' that accesses `Map', e.g.
+to read some configuration data, and then using from userspace `Map' to interact
+with `Prog', e.g. by updating the configuration stored in `Map' or reading values
+that `Prog' may have updated.
+
+For the interacting with eBPF maps from userspace, see {@link ebpf_maps}.
 
 @end
