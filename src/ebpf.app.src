@@ -1,5 +1,5 @@
 {application, ebpf, [
-    {description, "eBPF library"},
+    {description, "Erlang eBPF library"},
     {vsn, "0.2.0"},
     {registered, []},
     {applications, [
@@ -9,6 +9,6 @@
     {env, []},
     {modules, []},
 
-    {licenses, []},
-    {links, []}
+    {licenses, ["Apache-2.0"]},
+    {links, [{"Github", "https://github.com/oskardrums/ebpf"}]}
 ]}.
