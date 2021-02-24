@@ -18,7 +18,8 @@ Documentation
 
     $ rebar3 edoc
 
-The documentation for the latest version can be browsed at https://oskardrums.github.io/ebpf/
+The documentation for the latest release can be browsed on [hexdocs](https://hexdocs.pm/ebpf/).
+Documentation for the `main` branch is also available [here](https://oskardrums.github.io/ebpf/).
 
 Usage
 -----
@@ -26,11 +27,8 @@ Checkout the [examples](examples/).
 
 A minimal example is given below:
 ```erlang
-BinProg = ebpf_asm:assemble([
-                % Drop all packets
-                ebpf_kern:mov64_imm(r0, 0), % r0 = 0
-                ebpf_kern:exit_insn()       % return r0
-            ]),
+% Drop all packets
+BinProg = ebpf_asm:assemble(ebpf_kern:return(0)),
 
 {ok, FilterProg} = ebpf_user:load(socket_filter, BinProg),
 {ok, Sock} = socket:open(inet, stream, {raw, 0}),
@@ -47,6 +45,9 @@ ok = ebpf_user:close(XdpProg).
 For projects that build with `rebar3`, add `ebpf` as a dependency in `rebar.config`:
 
 ```erlang
+% From hex
+{deps, [ebpf]}.
+% Or from github
 {deps, [{ebpf, {git, "https://github.com/oskardrums/ebpf.git", "main"}}]}.
 ```
 
