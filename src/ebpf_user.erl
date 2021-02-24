@@ -23,9 +23,8 @@
     load/2,
     load/3,
     test/4,
-    attach_socket_filter/2,
+    attach/2,
     detach_socket_filter/1,
-    attach_xdp/2,
     detach_xdp/1,
     close/1,
     fd/1
@@ -66,6 +65,7 @@
 %% An `atom' used to specify the type of an eBPF program, see {@link load/2}
 
 -record(bpf_prog, {type = unspec :: prog_type(), fd = -1 :: integer()}).
+
 -opaque prog() :: #bpf_prog{}.
 %% A loaded eBPF program as returned by {@link load/2}.
 
@@ -73,6 +73,10 @@
     'sleepable'
     | {'log_buffer_size', non_neg_integer()}
     | {'license', string()}.
+
+-type xdp_attach_point() :: integer() | string().
+
+-type attach_point() :: socket:socket() | xdp_attach_point().
 
 -export_type([prog/0]).
 
@@ -172,17 +176,34 @@ test(Prog, Repeat, Data, DataOutSize) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Applies a loaded eBPF program as returned by {@link load/2} with
-%% `socket_filter' as `ProgType' to a socket.
+%% Attaches `Prog' as a callback program to be called by the kernel
+%% at `Point'.
+%%
+%% The possible values of `Point' depend on the eBPF program type of
+%% `Prog', which is determined at {@link load/2. load time}.
+%% The following attach points are currently supported:
+%%
+%% If `Prog' is a `socket_filter' program, `Point' is a `socket:socket()'.
+%%
+%% If `Prog' is an `xdp' program, `Point' is either a numeric
+%% interface index or a `string()' interface name.
 %% @end
 %%--------------------------------------------------------------------
--spec attach_socket_filter(socket:socket(), prog()) -> 'ok' | {'error', atom()}.
-attach_socket_filter(Sock, Prog) ->
-    {ok, SockFd} = socket:getopt(Sock, otp, fd),
-    ebpf_lib:bpf_attach_socket_filter(
-        SockFd,
-        Prog#bpf_prog.fd
-    ).
+-spec attach(attach_point(), prog()) -> 'ok' | {'error', atom()}.
+attach(Point, Prog) ->
+    case Prog#bpf_prog.type of
+        socket_filter ->
+            {ok, SockFd} = socket:getopt(Point, otp, fd),
+            ebpf_lib:bpf_attach_socket_filter(SockFd, Prog#bpf_prog.fd);
+        xdp ->
+            if
+                is_integer(Point) ->
+                    ebpf_lib:bpf_attach_xdp(Point, Prog#bpf_prog.fd);
+                is_list(Point) ->
+                    {ok, IfIndex} = net:if_name2index(Point),
+                    ebpf_lib:bpf_attach_xdp(IfIndex, Prog#bpf_prog.fd)
+            end
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -196,25 +217,10 @@ detach_socket_filter(Sock) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Applies a loaded eBPF XDP program as returned by {@link load/2}
-%% with `xdp' a `ProgType' to a network interface.
-%% @end
-%%--------------------------------------------------------------------
--spec attach_xdp(string() | non_neg_integer(), prog()) -> 'ok' | {'error', atom()}.
-attach_xdp(Interface, Prog) when is_integer(Interface) ->
-    % Interface is an interface index
-    ebpf_lib:bpf_attach_xdp(Interface, Prog#bpf_prog.fd);
-attach_xdp(Interface, Prog) when is_list(Interface) ->
-    % Interface is an interface name
-    {ok, IfIndex} = net:if_name2index(Interface),
-    ebpf_lib:bpf_attach_xdp(IfIndex, Prog#bpf_prog.fd).
-
-%%--------------------------------------------------------------------
-%% @doc
 %% Removes the attached eBPF XDP program from a network interface.
 %% @end
 %%--------------------------------------------------------------------
--spec detach_xdp(string() | non_neg_integer()) -> 'ok' | {'error', atom()}.
+-spec detach_xdp(xdp_attach_point()) -> 'ok' | {'error', atom()}.
 detach_xdp(Interface) when is_integer(Interface) ->
     ebpf_lib:bpf_attach_xdp(Interface, -1);
 detach_xdp(Interface) when is_list(Interface) ->
