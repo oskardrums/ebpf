@@ -18,7 +18,8 @@ Documentation
 
     $ rebar3 edoc
 
-The documentation for the latest version can be browsed at https://oskardrums.github.io/ebpf/
+The documentation for the latest release can be browsed on [hexdocs](https://hexdocs.pm/ebpf/).
+Documentation for the `main` branch is also available [here](https://oskardrums.github.io/ebpf/).
 
 Usage
 -----
@@ -47,6 +48,9 @@ ok = ebpf_user:close(XdpProg).
 For projects that build with `rebar3`, add `ebpf` as a dependency in `rebar.config`:
 
 ```erlang
+% From hex
+{deps, [ebpf]}.
+% Or from github
 {deps, [{ebpf, {git, "https://github.com/oskardrums/ebpf.git", "main"}}]}.
 ```
 
