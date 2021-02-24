@@ -44,7 +44,7 @@ Creating and using eBPF maps from userspace.</p>
 <p>  An <code>atom</code> used to specify the type of an eBPF map, see <a href="#create_map-4"><code>create_map/4</code></a></p>
 
 <h3 class="typedecl"><a name="type-value">value()</a></h3>
-<p><tt>value() = binary()</tt></p>
+<p><tt>value() = binary() | integer()</tt></p>
 
 
 <h2><a name="index">Function Index</a></h2>
@@ -69,11 +69,14 @@ Returns a new empty eBPF map.</td></tr>
   Returns the next key-value association in <code>Iterator</code> and a new  
 iterator for the remaining associations in the iterator.</td></tr>
 <tr><td valign="top"><a href="#put-3">put/3</a></td><td>
-  Returns the value associated with <code>Key</code> in eBPF map <code>Map</code> if <code>Map</code>
-  contains <code>Key</code>, otherwise returns <code>Default</code>.</td></tr>
+  Associates <code>Key</code> with value <code>Value</code> and inserts the association
+  into map <code>Map2</code>.</td></tr>
 <tr><td valign="top"><a href="#remove-2">remove/2</a></td><td>
   Removes the <code>Key</code>, if it exists, and its associated value from <code>Map1</code>
   and returns a new map <code>Map2</code> without key <code>Key</code>.</td></tr>
+<tr><td valign="top"><a href="#update-3">update/3</a></td><td>
+  If Key exists in <code>Map1</code>, the old associated value is replaced by
+  value <code>Value</code>.</td></tr>
 </table>
 
 <h2><a name="functions">Function Details</a></h2>
@@ -185,8 +188,9 @@ iterator for the remaining associations in the iterator.</p>
 <p><tt>put(Key::<a href="#type-key">key()</a>, Value::<a href="#type-value">value()</a>, Bpf_map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; <a href="#type-ebpf_map">ebpf_map()</a></tt><br></p>
 <p> </p>
 </div><p><p>
-  Returns the value associated with <code>Key</code> in eBPF map <code>Map</code> if <code>Map</code>
-  contains <code>Key</code>, otherwise returns <code>Default</code>.</p>
+  Associates <code>Key</code> with value <code>Value</code> and inserts the association
+  into map <code>Map2</code>. If key <code>Key</code> already exists in map <code>Map1</code>, the
+  old associated value is replaced by value <code>Value</code>.</p>
  
   See also <a href="http://erlang.org/doc/man/maps.html#put-3" target="_top"><tt>http://erlang.org/doc/man/maps.html#put-3</tt></a>.</p>
 
@@ -199,6 +203,20 @@ iterator for the remaining associations in the iterator.</p>
   and returns a new map <code>Map2</code> without key <code>Key</code>.</p>
  
   See also <a href="http://erlang.org/doc/man/maps.html#remove-2" target="_top"><tt>http://erlang.org/doc/man/maps.html#remove-2</tt></a>.</p>
+
+<h3 class="function"><a name="update-3">update/3</a></h3>
+<div class="spec">
+<p><tt>update(Key::<a href="#type-key">key()</a>, Value::<a href="#type-value">value()</a>, Bpf_map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; <a href="#type-ebpf_map">ebpf_map()</a></tt><br></p>
+<p> </p>
+</div><p><p>
+  If Key exists in <code>Map1</code>, the old associated value is replaced by
+  value <code>Value</code>. The function returns a new map <code>Map2</code> containing the  
+new associated value.</p>
+ 
+  <p>The call fails with a <code>{badkey,Key}</code> exception if no value is
+  associated with <code>Key</code>.</p>
+ 
+  See also <a href="http://erlang.org/doc/man/maps.html#update-3" target="_top"><tt>http://erlang.org/doc/man/maps.html#update-3</tt></a>.</p>
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
