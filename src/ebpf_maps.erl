@@ -77,7 +77,7 @@
     max_entries = 0 :: non_neg_integer()
 }).
 -type key() :: binary() | integer().
--type value() :: binary().
+-type value() :: binary() | integer().
 -opaque ebpf_map() :: #bpf_map{}.
 %% An active eBPF map as returned by {@link new/5}.
 
