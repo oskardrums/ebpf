@@ -7,7 +7,7 @@ Erlang eBPF library
 Overview
 --------
 `ebpf` is an Erlang library for creating and interacting with eBPF programs.
-These modules are currently included:
+The following modules are currently included:
 * `ebpf_user`: load eBPF programs and use loaded programs
 * `ebpf_kern`: generate eBPF instructions according to different parameters
 * `ebpf_asm`: eBPF assembly and disassembly routines

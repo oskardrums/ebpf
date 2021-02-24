@@ -11,6 +11,8 @@
 %%% Note that the functions in this module can work with any
 %%% binary eBPF program, not only those created via `ebpf'.
 %%%
+%%% For creating and using eBPF maps see {@link ebpf_maps}.
+%%%
 %%% @end
 %%% Created :  7 Feb 2021 by user <moskar.drummer@gmail.home>
 %%%-------------------------------------------------------------------
@@ -63,7 +65,8 @@
     | 'sk_lookup'.
 %% An `atom' used to specify the type of an eBPF program, see {@link load/2}
 
--opaque prog() :: integer().
+-record(bpf_prog, {type = unspec :: prog_type(), fd = -1 :: integer()}).
+-opaque prog() :: #bpf_prog{}.
 %% A loaded eBPF program as returned by {@link load/2}.
 
 -type load_option() ::
@@ -111,13 +114,19 @@
     {'ok', prog()} | {'ok', prog(), string()} | {'error', atom()} | {'error', atom(), string()}.
 load(ProgType, BinProg, Options) ->
     {Flags, LogBufferSize, License} = read_load_options(Options),
-    ebpf_lib:bpf_load_program(
-        bpf_prog_type_to_int(ProgType),
-        BinProg,
-        LogBufferSize,
-        License,
-        Flags
-    ).
+    case
+        ebpf_lib:bpf_load_program(
+            bpf_prog_type_to_int(ProgType),
+            BinProg,
+            LogBufferSize,
+            License,
+            Flags
+        )
+    of
+        {ok, ProgFd} -> {ok, #bpf_prog{type = ProgType, fd = ProgFd}};
+        {ok, ProgFd, Log} -> {ok, #bpf_prog{type = ProgType, fd = ProgFd}, Log};
+        Other -> Other
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -155,7 +164,7 @@ load(ProgType, BinProg) ->
     | {'error', atom()}.
 test(Prog, Repeat, Data, DataOutSize) ->
     ebpf_lib:bpf_test_program(
-        Prog,
+        Prog#bpf_prog.fd,
         Repeat,
         Data,
         DataOutSize
@@ -172,7 +181,7 @@ attach_socket_filter(Sock, Prog) ->
     {ok, SockFd} = socket:getopt(Sock, otp, fd),
     ebpf_lib:bpf_attach_socket_filter(
         SockFd,
-        Prog
+        Prog#bpf_prog.fd
     ).
 
 %%--------------------------------------------------------------------
@@ -194,11 +203,11 @@ detach_socket_filter(Sock) ->
 -spec attach_xdp(string() | non_neg_integer(), prog()) -> 'ok' | {'error', atom()}.
 attach_xdp(Interface, Prog) when is_integer(Interface) ->
     % Interface is an interface index
-    ebpf_lib:bpf_attach_xdp(Interface, Prog);
+    ebpf_lib:bpf_attach_xdp(Interface, Prog#bpf_prog.fd);
 attach_xdp(Interface, Prog) when is_list(Interface) ->
     % Interface is an interface name
     {ok, IfIndex} = net:if_name2index(Interface),
-    ebpf_lib:bpf_attach_xdp(IfIndex, Prog).
+    ebpf_lib:bpf_attach_xdp(IfIndex, Prog#bpf_prog.fd).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -219,7 +228,7 @@ detach_xdp(Interface) when is_list(Interface) ->
 %%--------------------------------------------------------------------
 -spec close(prog()) -> 'ok' | {'error', atom()}.
 close(Prog) ->
-    ebpf_lib:bpf_close(Prog).
+    ebpf_lib:bpf_close(Prog#bpf_prog.fd).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -227,7 +236,7 @@ close(Prog) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec fd(prog()) -> non_neg_integer().
-fd(Prog) -> Prog.
+fd(Prog) -> Prog#bpf_prog.fd.
 
 %%%===================================================================
 %%% Internal functions
