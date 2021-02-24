@@ -247,7 +247,7 @@ simple_socket_filter_1(_Config) ->
         socket_filter,
         ebpf_asm:assemble([
             % R0 = 0
-            ebpf_kern:mov64_imm(0, 0),
+            ebpf_kern:mov64_imm(r0, 0),
             % return R0
             ebpf_kern:exit_insn()
         ])
@@ -264,7 +264,7 @@ simple_xdp_1(_Config) ->
         xdp,
         ebpf_asm:assemble([
             % R0 = 0
-            ebpf_kern:mov64_imm(0, 0),
+            ebpf_kern:mov64_imm(r0, 0),
             % return R0
             ebpf_kern:exit_insn()
         ])
@@ -279,7 +279,7 @@ readme_example_1(_Config) ->
         % Drop all packets
 
         % r0 = 0
-        ebpf_kern:mov64_imm(0, 0),
+        ebpf_kern:mov64_imm(r0, 0),
         % return r0
         ebpf_kern:exit_insn()
     ]),
@@ -370,7 +370,7 @@ test_user_test_program_1(_Config) ->
             xdp,
             ebpf_asm:assemble(
                 lists:flatten([
-                    ebpf_kern:mov64_imm(0, -1),
+                    ebpf_kern:mov64_imm(r0, -1),
                     ebpf_kern:exit_insn()
                 ])
             )
@@ -402,7 +402,7 @@ test_user_test_program_2(_Config) ->
             xdp,
             ebpf_asm:assemble(
                 lists:flatten([
-                    ebpf_kern:mov64_imm(0, -1),
+                    ebpf_kern:mov64_imm(r0, -1),
                     ebpf_kern:exit_insn()
                 ])
             )
@@ -432,12 +432,12 @@ alu64_reg_known_good_result_1() -> [].
 alu64_reg_known_good_result_1(_Config) ->
     #bpf_instruction{
         code = {alu64, x, add},
-        dst_reg = 1,
-        src_reg = 2
+        dst_reg = r1,
+        src_reg = r2
     } = ebpf_kern:alu64_reg(
         add,
-        1,
-        2
+        r1,
+        r2
     ).
 
 ld_imm64_raw_full_known_good_result_1() -> [].
@@ -445,21 +445,21 @@ ld_imm64_raw_full_known_good_result_1(_Config) ->
     [
         #bpf_instruction{
             code = {ld, dw, imm},
-            dst_reg = 1,
-            src_reg = 2,
+            dst_reg = r1,
+            src_reg = r2,
             off = 1337,
             imm = 16#beef
         },
         #bpf_instruction{
             code = {ld, w, imm},
-            dst_reg = 0,
-            src_reg = 0,
+            dst_reg = r0,
+            src_reg = r0,
             off = 8008,
             imm = 16#feed
         }
     ] = ebpf_kern:ld_imm64_raw_full(
-        1,
-        2,
+        r1,
+        r2,
         1337,
         8008,
         16#beef,
@@ -471,19 +471,19 @@ ld_map_fd_known_good_result_1(_Config) ->
     [
         #bpf_instruction{
             code = {ld, dw, imm},
-            dst_reg = 1,
+            dst_reg = r1,
             src_reg = ?BPF_PSEUDO_MAP_FD,
             off = 0,
             imm = 17
         },
         #bpf_instruction{
             code = {ld, w, imm},
-            dst_reg = 0,
-            src_reg = 0,
+            dst_reg = r0,
+            src_reg = r0,
             off = 0,
             imm = 0
         }
-    ] = ebpf_kern:ld_map_fd(1, 17).
+    ] = ebpf_kern:ld_map_fd(r1, 17).
 
 test_load_cf_ttl_1() -> [].
 test_load_cf_ttl_1(_Config) ->
@@ -533,31 +533,31 @@ test_load_cf_ttl_1(_Config) ->
     Map = ebpf_maps:new(hash, 4, 8, 4),
     MapFd = ebpf_maps:fd(Map),
     Instructions = lists:flatten([
-        ebpf_kern:ldx_mem(w, 0, 1, 16),
-        ebpf_kern:jmp64_imm(eq, 0, 16#86DD, 3),
-        ebpf_kern:mov64_reg(6, 1),
+        ebpf_kern:ldx_mem(w, r0, r1, 16),
+        ebpf_kern:jmp64_imm(eq, r0, 16#86DD, 3),
+        ebpf_kern:mov64_reg(r6, r1),
         ebpf_kern:ld_abs(b, -16#100000 + 8),
         ebpf_kern:jmp_a(2),
-        ebpf_kern:mov64_reg(6, 1),
+        ebpf_kern:mov64_reg(r6, r1),
         ebpf_kern:ld_abs(b, -16#100000 + 7),
-        ebpf_kern:stx_mem(w, 10, 0, -4),
-        ebpf_kern:mov64_reg(2, 10),
-        ebpf_kern:alu64_imm(add, 2, -4),
-        ebpf_kern:ld_map_fd(1, MapFd),
+        ebpf_kern:stx_mem(w, r10, r0, -4),
+        ebpf_kern:mov64_reg(r2, r10),
+        ebpf_kern:alu64_imm(add, r2, -4),
+        ebpf_kern:ld_map_fd(r1, MapFd),
         ebpf_kern:call_helper(map_lookup_elem),
-        ebpf_kern:jmp64_imm(eq, 0, 0, 3),
-        ebpf_kern:mov64_imm(1, 1),
-        ebpf_kern:stx_xadd(dw, 0, 1, 0),
+        ebpf_kern:jmp64_imm(eq, r0, 0, 3),
+        ebpf_kern:mov64_imm(r1, 1),
+        ebpf_kern:stx_xadd(dw, r0, r1, 0),
         ebpf_kern:jmp_a(9),
-        ebpf_kern:ld_map_fd(1, MapFd),
-        ebpf_kern:mov64_reg(2, 10),
-        ebpf_kern:alu64_imm(add, 2, -4),
-        ebpf_kern:st_mem(dw, 10, -16, 1),
-        ebpf_kern:mov64_reg(3, 10),
-        ebpf_kern:alu64_imm(add, 3, -16),
-        ebpf_kern:mov64_imm(4, 0),
+        ebpf_kern:ld_map_fd(r1, MapFd),
+        ebpf_kern:mov64_reg(r2, r10),
+        ebpf_kern:alu64_imm(add, r2, -4),
+        ebpf_kern:st_mem(dw, r10, -16, 1),
+        ebpf_kern:mov64_reg(r3, r10),
+        ebpf_kern:alu64_imm(add, r3, -16),
+        ebpf_kern:mov64_imm(r4, 0),
         ebpf_kern:call_helper(map_update_elem),
-        ebpf_kern:mov64_imm(0, -1),
+        ebpf_kern:mov64_imm(r0, -1),
         ebpf_kern:exit_insn()
     ]),
     {ok, Prog, Desc} = ebpf_user:load(socket_filter, ebpf_asm:assemble(Instructions), [
@@ -574,31 +574,31 @@ test_load_cf_ttl_2(_Config) ->
     Map = ebpf_maps:new(hash, 4, 8, 4),
     MapFd = ebpf_maps:fd(Map),
     Instructions = lists:flatten([
-        ebpf_kern:ldx_mem(w, 0, 1, 16),
-        ebpf_kern:jmp64_imm(eq, 0, 16#86DD, 3),
-        ebpf_kern:mov64_reg(6, 1),
+        ebpf_kern:ldx_mem(w, r0, r1, 16),
+        ebpf_kern:jmp64_imm(eq, r0, 16#86DD, 3),
+        ebpf_kern:mov64_reg(r6, r1),
         ebpf_kern:ld_abs(b, -16#100000 + 8),
         ebpf_kern:jmp_a(2),
-        ebpf_kern:mov64_reg(6, 1),
+        ebpf_kern:mov64_reg(r6, r1),
         ebpf_kern:ld_abs(b, -16#100000 + 7),
-        ebpf_kern:stx_mem(w, 10, 0, -4),
-        ebpf_kern:mov64_reg(2, 10),
-        ebpf_kern:alu64_imm(add, 2, -4),
-        ebpf_kern:ld_map_fd(1, MapFd),
+        ebpf_kern:stx_mem(w, r10, r0, -4),
+        ebpf_kern:mov64_reg(r2, r10),
+        ebpf_kern:alu64_imm(add, r2, -4),
+        ebpf_kern:ld_map_fd(r1, MapFd),
         ebpf_kern:call_helper(map_lookup_elem),
-        ebpf_kern:jmp64_imm(eq, 0, 0, 3),
-        ebpf_kern:mov64_imm(1, 1),
-        ebpf_kern:stx_xadd(dw, 0, 1, 0),
+        ebpf_kern:jmp64_imm(eq, r0, 0, 3),
+        ebpf_kern:mov64_imm(r1, 1),
+        ebpf_kern:stx_xadd(dw, r0, r1, 0),
         ebpf_kern:jmp_a(9),
-        ebpf_kern:ld_map_fd(1, MapFd),
-        ebpf_kern:mov64_reg(2, 10),
-        ebpf_kern:alu64_imm(add, 2, -4),
-        ebpf_kern:st_mem(dw, 10, -16, 1),
-        ebpf_kern:mov64_reg(3, 10),
-        ebpf_kern:alu64_imm(add, 3, -16),
-        ebpf_kern:mov64_imm(4, 0),
+        ebpf_kern:ld_map_fd(r1, MapFd),
+        ebpf_kern:mov64_reg(r2, r10),
+        ebpf_kern:alu64_imm(add, r2, -4),
+        ebpf_kern:st_mem(dw, r10, -16, 1),
+        ebpf_kern:mov64_reg(r3, r10),
+        ebpf_kern:alu64_imm(add, r3, -16),
+        ebpf_kern:mov64_imm(r4, 0),
         ebpf_kern:call_helper(map_update_elem),
-        ebpf_kern:mov64_imm(0, -1),
+        ebpf_kern:mov64_imm(r0, -1),
         ebpf_kern:exit_insn()
     ]),
     {ok, Prog} = ebpf_user:load(

@@ -28,8 +28,8 @@ A minimal example is given below:
 ```erlang
 BinProg = ebpf_asm:assemble([
                 % Drop all packets
-                ebpf_kern:mov64_imm(0, 0), % r0 = 0
-                ebpf_kern:exit_insn()      % return r0
+                ebpf_kern:mov64_imm(r0, 0), % r0 = 0
+                ebpf_kern:exit_insn()       % return r0
             ]),
 
 {ok, FilterProg} = ebpf_user:load(socket_filter, BinProg),

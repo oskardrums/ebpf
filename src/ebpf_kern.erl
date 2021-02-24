@@ -395,9 +395,9 @@ stack_printk(String, StackHead) ->
     Instructions =
         Instructions0 ++
             [
-                mov64_reg(1, 10),
-                alu64_imm(add, 1, NewStackHead),
-                mov64_imm(2, -NewStackHead),
+                mov64_reg(r1, r10),
+                alu64_imm(add, r1, NewStackHead),
+                mov64_imm(r2, -NewStackHead),
                 call_helper(trace_printk)
             ],
     Instructions.
@@ -450,7 +450,7 @@ store_buffer(Bin, Off) ->
 
 -spec store_buffer(binary(), integer(), [bpf_instruction()]) -> [bpf_instruction()].
 store_buffer(<<Imm:32/big-signed-integer, Bin/binary>>, Off, Acc) ->
-    store_buffer(Bin, Off + 4, [st_mem(w, 10, Off, Imm) | Acc]);
+    store_buffer(Bin, Off + 4, [st_mem(w, r10, Off, Imm) | Acc]);
 store_buffer(<<>>, _Off, Acc) ->
     Acc;
 store_buffer(BinImm, Off, Acc) ->

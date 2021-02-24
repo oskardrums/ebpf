@@ -61,12 +61,14 @@ bpf_instructions_to_binary(BpfInstructions) ->
 -spec bpf_instruction_encode(bpf_instruction()) -> binary().
 bpf_instruction_encode(#bpf_instruction{
     code = OpCode,
-    dst_reg = Dst,
-    src_reg = Src,
+    dst_reg = DstReg,
+    src_reg = SrcReg,
     off = Off,
     imm = Imm
 }) ->
     Code = bpf_opcode_to_int(OpCode),
+    Dst = bpf_reg_to_int(DstReg),
+    Src = bpf_reg_to_int(SrcReg),
     <<Code:8/unsigned, Src:4/unsigned, Dst:4/unsigned, Off:16/little-signed, Imm:32/little-signed>>.
 
 -spec bpf_instruction_decode(binary()) -> bpf_instruction().
@@ -75,8 +77,8 @@ bpf_instruction_decode(
 ) ->
     #bpf_instruction{
         code = bpf_opcode_from_int(Code),
-        dst_reg = Dst,
-        src_reg = Src,
+        dst_reg = bpf_reg_from_int(Dst),
+        src_reg = bpf_reg_from_int(Src),
         off = Off,
         imm = Imm
     }.
@@ -215,3 +217,29 @@ bpf_jmp_op_to_int(slt) -> ?BPF_JSLT;
 bpf_jmp_op_to_int(sle) -> ?BPF_JSLE;
 bpf_jmp_op_to_int(call) -> ?BPF_CALL;
 bpf_jmp_op_to_int(exit) -> ?BPF_EXIT.
+
+-spec bpf_reg_from_int(byte()) -> bpf_reg().
+bpf_reg_from_int(0) -> r0;
+bpf_reg_from_int(1) -> r1;
+bpf_reg_from_int(2) -> r2;
+bpf_reg_from_int(3) -> r3;
+bpf_reg_from_int(4) -> r4;
+bpf_reg_from_int(5) -> r5;
+bpf_reg_from_int(6) -> r6;
+bpf_reg_from_int(7) -> r7;
+bpf_reg_from_int(8) -> r8;
+bpf_reg_from_int(9) -> r9;
+bpf_reg_from_int(10) -> r10.
+
+-spec bpf_reg_to_int(bpf_reg()) -> byte().
+bpf_reg_to_int(r0) -> 0;
+bpf_reg_to_int(r1) -> 1;
+bpf_reg_to_int(r2) -> 2;
+bpf_reg_to_int(r3) -> 3;
+bpf_reg_to_int(r4) -> 4;
+bpf_reg_to_int(r5) -> 5;
+bpf_reg_to_int(r6) -> 6;
+bpf_reg_to_int(r7) -> 7;
+bpf_reg_to_int(r8) -> 8;
+bpf_reg_to_int(r9) -> 9;
+bpf_reg_to_int(r10) -> 10.
