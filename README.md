@@ -27,11 +27,8 @@ Checkout the [examples](examples/).
 
 A minimal example is given below:
 ```erlang
-BinProg = ebpf_asm:assemble([
-                % Drop all packets
-                ebpf_kern:mov64_imm(r0, 0), % r0 = 0
-                ebpf_kern:exit_insn()       % return r0
-            ]),
+% Drop all packets
+BinProg = ebpf_asm:assemble(ebpf_kern:return(0)),
 
 {ok, FilterProg} = ebpf_user:load(socket_filter, BinProg),
 {ok, Sock} = socket:open(inet, stream, {raw, 0}),

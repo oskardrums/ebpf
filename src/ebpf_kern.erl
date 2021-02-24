@@ -65,7 +65,9 @@
     push_binary/1,
     push_binary/2,
     push_string/1,
-    push_string/2
+    push_string/2,
+    return/1,
+    branch/5
 ]).
 
 -include("ebpf_kern.hrl").
@@ -181,6 +183,29 @@ jmp32_imm(Op, Dst, Imm, Off) ->
         off = Off,
         imm = Imm
     }.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% `if Src Op Dst: goto Bt, else goto Bf'
+%% @end
+%%--------------------------------------------------------------------
+-spec branch(
+    bpf_jmp_op(),
+    bpf_reg(),
+    bpf_imm() | bpf_reg(),
+    bpf_instructions(),
+    bpf_instructions()
+) -> bpf_instructions().
+branch(Op, Dst, Src, BranchTrue, BranchFalse) ->
+    Bt = lists:flatten(BranchTrue),
+    Bf = lists:flatten(BranchFalse),
+    Off = length(Bf) + 1,
+    Jmp =
+        if
+            is_atom(Src) -> jmp64_reg(Op, Dst, Src, Off);
+            is_integer(Src) -> jmp64_imm(Op, Dst, Src, Off)
+        end,
+    [Jmp | Bf] ++ [jmp_a(length(Bt)) | Bt].
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -440,9 +465,42 @@ push_binary(Bin, Head) ->
     NewHead = Head - (Size + ((4 - (Size rem 4)) rem 4)),
     {store_buffer(Bin, NewHead), NewHead}.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% `return Src'
+%% @end
+%%--------------------------------------------------------------------
+-spec return(bpf_imm() | bpf_reg()) -> [bpf_instruction()].
+return(Src) ->
+    if
+        is_atom(Src) -> return_reg(Src);
+        is_integer(Src) -> return_imm(Src)
+    end.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc
+%% `return Imm'
+%% @end
+%%--------------------------------------------------------------------
+-spec return_imm(bpf_imm()) -> [bpf_instruction()].
+return_imm(Imm) ->
+    [mov64_imm(r0, Imm), exit_insn()].
+
+%%--------------------------------------------------------------------
+%% @doc
+%% `return Reg'
+%% @end
+%%--------------------------------------------------------------------
+-spec return_reg(bpf_reg()) -> [bpf_instruction()].
+return_reg(Reg) ->
+    case Reg of
+        r0 -> [exit_insn()];
+        _ -> [mov64_reg(r0, Reg), exit_insn()]
+    end.
 
 -spec store_buffer(binary(), integer()) -> [bpf_instruction()].
 store_buffer(Bin, Off) ->
