@@ -9,6 +9,7 @@
 -module(ebpf_SUITE).
 
 %% Note: This directive should only be used in test suites.
+-compile(nowarn_export_all).
 -compile(export_all).
 
 -include_lib("common_test/include/ct.hrl").
@@ -303,8 +304,11 @@ readme_example_1(_Config) ->
 test_user_create_map_hash_1() -> [].
 test_user_create_map_hash_1(_Config) ->
     case ebpf_maps:new(hash, 4, 4, 255) of
-        {error, Reason} -> {error, Reason};
-        Map -> ebpf_maps:close(Map)
+        {error, Reason} ->
+            {error, Reason};
+        Map ->
+            {badkey, 0} = (catch ebpf_maps:update(0, 1, Map)),
+            ebpf_maps:close(Map)
     end.
 
 test_user_map_hash_1() -> [].
