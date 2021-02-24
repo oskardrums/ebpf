@@ -51,6 +51,8 @@ Linux sytem.</p>
   <code>Dst = Imm Op Dst</code></td></tr>
 <tr><td valign="top"><a href="#alu64_reg-3">alu64_reg/3</a></td><td>
   <code>Dst = Src Op Dst</code></td></tr>
+<tr><td valign="top"><a href="#branch-5">branch/5</a></td><td>
+  <code>if Src Op Dst: goto Bt, else goto Bf</code></td></tr>
 <tr><td valign="top"><a href="#call_helper-1">call_helper/1</a></td><td>
   <code>r0 = Helper(r1,r2,r3,r4,r5)</code></td></tr>
 <tr><td valign="top"><a href="#emit_call-1">emit_call/1</a></td><td>
@@ -93,6 +95,8 @@ Linux sytem.</p>
   Same as push_string/2, with StackHead set to 0.</td></tr>
 <tr><td valign="top"><a href="#push_string-2">push_string/2</a></td><td>
   <code>push String at StackHead</code></td></tr>
+<tr><td valign="top"><a href="#return-1">return/1</a></td><td>
+  <code>return Src</code></td></tr>
 <tr><td valign="top"><a href="#st_mem-4">st_mem/4</a></td><td>
   <code>*(Dst + Off) = Imm</code></td></tr>
 <tr><td valign="top"><a href="#stack_printk-1">stack_printk/1</a></td><td>
@@ -137,6 +141,13 @@ Linux sytem.</p>
 <p> </p>
 </div><p>
   <code>Dst = Src Op Dst</code></p>
+
+<h3 class="function"><a name="branch-5">branch/5</a></h3>
+<div class="spec">
+<p><tt>branch(Op::<a href="#type-bpf_jmp_op">bpf_jmp_op()</a>, Dst::<a href="#type-bpf_reg">bpf_reg()</a>, Src::<a href="#type-bpf_imm">bpf_imm()</a> | <a href="#type-bpf_reg">bpf_reg()</a>, BranchTrue::<a href="#type-bpf_instructions">bpf_instructions()</a>, BranchFalse::<a href="#type-bpf_instructions">bpf_instructions()</a>) -&gt; <a href="#type-bpf_instructions">bpf_instructions()</a></tt><br></p>
+<p> </p>
+</div><p>
+  <code>if Src Op Dst: goto Bt, else goto Bf</code></p>
 
 <h3 class="function"><a name="call_helper-1">call_helper/1</a></h3>
 <div class="spec">
@@ -284,6 +295,13 @@ Linux sytem.</p>
 <p> </p>
 </div><p>
   <code>push String at StackHead</code></p>
+
+<h3 class="function"><a name="return-1">return/1</a></h3>
+<div class="spec">
+<p><tt>return(Src::<a href="#type-bpf_imm">bpf_imm()</a> | <a href="#type-bpf_reg">bpf_reg()</a>) -&gt; [<a href="#type-bpf_instruction">bpf_instruction()</a>]</tt><br></p>
+<p> </p>
+</div><p>
+  <code>return Src</code></p>
 
 <h3 class="function"><a name="st_mem-4">st_mem/4</a></h3>
 <div class="spec">
