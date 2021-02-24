@@ -75,8 +75,8 @@
 -define(BPF_TAX, 16#00).
 -define(BPF_TXA, 16#80).
 
--define(BPF_PSEUDO_MAP_FD, 1).
--define(BPF_PSEUDO_MAP_VALUE, 2).
+-define(BPF_PSEUDO_MAP_FD, r1).
+-define(BPF_PSEUDO_MAP_VALUE, r2).
 
 -type bpf_ld_mode() :: 'imm' | 'abs' | 'mem' | 'ind' | 'xadd'.
 
@@ -288,14 +288,14 @@
     {bpf_ld_st_class(), bpf_size(), bpf_ld_mode()}
     | {bpf_alu_class(), bpf_src(), bpf_alu_op()}
     | {bpf_jmp_class(), bpf_src(), bpf_jmp_op()}.
--type bpf_reg() :: 0..10.
+-type bpf_reg() :: 'r0' | 'r1' | 'r2' | 'r3' | 'r4' | 'r5' | 'r6' | 'r7' | 'r8' | 'r9' | 'r10'.
 -type bpf_off() :: 1 - (1 bsl 15)..(1 bsl 15) - 1.
 -type bpf_imm() :: 1 - (1 bsl 31)..(1 bsl 31) - 1.
 
 -record(bpf_instruction, {
-    code = 0 :: bpf_opcode(),
-    dst_reg = 0 :: bpf_reg(),
-    src_reg = 0 :: bpf_reg(),
+    code = {ld, w, imm} :: bpf_opcode(),
+    dst_reg = r0 :: bpf_reg(),
+    src_reg = r0 :: bpf_reg(),
     off = 0 :: bpf_off(),
     imm = 0 :: bpf_imm()
 }).

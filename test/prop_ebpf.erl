@@ -34,7 +34,7 @@ prop_kern_exit_returns_given_value() ->
             Data = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>>,
             {ok, Prog} = ebpf_user:load(
                 xdp,
-                ebpf_asm:assemble([ebpf_kern:mov64_imm(0, Val), ebpf_kern:exit_insn()])
+                ebpf_asm:assemble([ebpf_kern:mov64_imm(r0, Val), ebpf_kern:exit_insn()])
             ),
             {ok, Val, Data, _Duration1} = ebpf_user:test(Prog, 1, Data, byte_size(Data)),
             {ok, Val, <<>>, _Duration2} = ebpf_user:test(Prog, 1, Data, 0),
