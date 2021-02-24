@@ -302,3 +302,4 @@
 
 -type bpf_instruction() :: #bpf_instruction{}.
 -type bpf_sequence() :: [bpf_instruction()].
+-type bpf_instructions() :: [bpf_instruction() | [bpf_instruction()]].
