@@ -253,7 +253,7 @@ simple_socket_filter_1(_Config) ->
         ])
     ),
     {ok, Sock} = socket:open(inet, stream, {raw, 0}),
-    ok = ebpf_user:attach_socket_filter(Sock, Prog),
+    ok = ebpf_user:attach(Sock, Prog),
     ok = ebpf_user:detach_socket_filter(Sock),
     ok = ebpf_user:close(Prog),
     ok = socket:close(Sock).
@@ -269,7 +269,7 @@ simple_xdp_1(_Config) ->
             ebpf_kern:exit_insn()
         ])
     ),
-    ok = ebpf_user:attach_xdp("lo", Prog),
+    ok = ebpf_user:attach("lo", Prog),
     ok = ebpf_user:detach_xdp("lo"),
     ok = ebpf_user:close(Prog).
 
@@ -286,7 +286,7 @@ readme_example_1(_Config) ->
     {ok, FilterProg} = ebpf_user:load(socket_filter, BinProg),
     {ok, Sock} = socket:open(inet, stream, {raw, 0}),
     % All new input to Sock is
-    ok = ebpf_user:attach_socket_filter(Sock, FilterProg),
+    ok = ebpf_user:attach(Sock, FilterProg),
     % Sock is back to normal and FilterProg can be
     ok = ebpf_user:detach_socket_filter(Sock),
 
@@ -295,7 +295,7 @@ readme_example_1(_Config) ->
 
     {ok, XdpProg} = ebpf_user:load(xdp, BinProg),
     % Try pinging 127.0.0.1, go ahead
-    ok = ebpf_user:attach_xdp("lo", XdpProg),
+    ok = ebpf_user:attach("lo", XdpProg),
     % Now, that's better :)
     ok = ebpf_user:detach_xdp("lo"),
     ok = ebpf_user:close(XdpProg).
