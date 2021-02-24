@@ -1,0 +1,3 @@
+c_src/include/asm/* linguist-vendor
+c_src/include/linux/* linguist-vendor
+c_src/include/uapi/linux/* linguist-vendor
