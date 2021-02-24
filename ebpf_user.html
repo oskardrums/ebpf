@@ -30,6 +30,10 @@ including loading, debugging and applying eBPF programs.</p>
   
 <h2><a name="types">Data Types</a></h2>
 
+<h3 class="typedecl"><a name="type-attach_point">attach_point()</a></h3>
+<p><tt>attach_point() = <a href="socket.html#type-socket">socket:socket()</a> | <a href="#type-xdp_attach_point">xdp_attach_point()</a></tt></p>
+
+
 <h3 class="typedecl"><a name="type-load_option">load_option()</a></h3>
 <p><tt>load_option() = sleepable | {log_buffer_size, non_neg_integer()} | {license, string()}</tt></p>
 
@@ -42,13 +46,14 @@ including loading, debugging and applying eBPF programs.</p>
 <p><tt>prog_type() = unspec | socket_filter | kprobe | sched_cls | sched_act | tracepoint | xdp | perf_event | cgroup_skb | cgroup_sock | lwt_in | lwt_out | lwt_xmit | sock_ops | sk_skb | cgroup_device | sk_msg | raw_tracepoint | cgroup_sock_addr | lwt_seg6local | lirc_mode2 | sk_reuseport | flow_dissector | cgroup_sysctl | raw_tracepoint_writable | cgroup_sockopt | tracing | struct_ops | ext | lsm | sk_lookup</tt></p>
 <p>  An <code>atom</code> used to specify the type of an eBPF program, see <a href="#load-2"><code>load/2</code></a></p>
 
+<h3 class="typedecl"><a name="type-xdp_attach_point">xdp_attach_point()</a></h3>
+<p><tt>xdp_attach_point() = integer() | string()</tt></p>
+
+
 <h2><a name="index">Function Index</a></h2>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#attach_socket_filter-2">attach_socket_filter/2</a></td><td>
-  Applies a loaded eBPF program as returned by <a href="#load-2"><code>load/2</code></a> with
-  <code>socket_filter</code> as <code>ProgType</code> to a socket.</td></tr>
-<tr><td valign="top"><a href="#attach_xdp-2">attach_xdp/2</a></td><td>
-  Applies a loaded eBPF XDP program as returned by <a href="#load-2"><code>load/2</code></a>
-  with <code>xdp</code> a <code>ProgType</code> to a network interface.</td></tr>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#attach-2">attach/2</a></td><td>
+  Attaches <code>Prog</code> as a callback program to be called by the kernel
+  at <code>Point</code>.</td></tr>
 <tr><td valign="top"><a href="#close-1">close/1</a></td><td>
   Closes <code>Prog</code>.</td></tr>
 <tr><td valign="top"><a href="#detach_socket_filter-1">detach_socket_filter/1</a></td><td>
@@ -67,21 +72,22 @@ Performs a test run of Prog with Data as input.</td></tr>
 
 <h2><a name="functions">Function Details</a></h2>
 
-<h3 class="function"><a name="attach_socket_filter-2">attach_socket_filter/2</a></h3>
+<h3 class="function"><a name="attach-2">attach/2</a></h3>
 <div class="spec">
-<p><tt>attach_socket_filter(Sock::<a href="socket.html#type-socket">socket:socket()</a>, Prog::<a href="#type-prog">prog()</a>) -&gt; ok | {error, atom()}</tt><br></p>
+<p><tt>attach(Point::<a href="#type-attach_point">attach_point()</a>, Prog::<a href="#type-prog">prog()</a>) -&gt; ok | {error, atom()}</tt><br></p>
 <p> </p>
-</div><p>
-  Applies a loaded eBPF program as returned by <a href="#load-2"><code>load/2</code></a> with
-  <code>socket_filter</code> as <code>ProgType</code> to a socket.</p>
-
-<h3 class="function"><a name="attach_xdp-2">attach_xdp/2</a></h3>
-<div class="spec">
-<p><tt>attach_xdp(Interface::string() | non_neg_integer(), Prog::<a href="#type-prog">prog()</a>) -&gt; ok | {error, atom()}</tt><br></p>
-<p> </p>
-</div><p>
-  Applies a loaded eBPF XDP program as returned by <a href="#load-2"><code>load/2</code></a>
-  with <code>xdp</code> a <code>ProgType</code> to a network interface.</p>
+</div><p><p>
+  Attaches <code>Prog</code> as a callback program to be called by the kernel
+  at <code>Point</code>.</p>
+ 
+  <p>The possible values of <code>Point</code> depend on the eBPF program type of
+  <code>Prog</code>, which is determined at <a href="#load-2">load time</a>.  
+The following attach points are currently supported:</p>
+ 
+  <p>If <code>Prog</code> is a <code>socket_filter</code> program, <code>Point</code> is a <code>socket:socket()</code>.</p>
+ 
+  If <code>Prog</code> is an <code>xdp</code> program, <code>Point</code> is either a numeric
+  interface index or a <code>string()</code> interface name.</p>
 
 <h3 class="function"><a name="close-1">close/1</a></h3>
 <div class="spec">
@@ -99,7 +105,7 @@ Performs a test run of Prog with Data as input.</td></tr>
 
 <h3 class="function"><a name="detach_xdp-1">detach_xdp/1</a></h3>
 <div class="spec">
-<p><tt>detach_xdp(Interface::string() | non_neg_integer()) -&gt; ok | {error, atom()}</tt><br></p>
+<p><tt>detach_xdp(Interface::<a href="#type-xdp_attach_point">xdp_attach_point()</a>) -&gt; ok | {error, atom()}</tt><br></p>
 <p> </p>
 </div><p>
   Removes the attached eBPF XDP program from a network interface.</p>
