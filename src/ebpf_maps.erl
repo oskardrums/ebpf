@@ -18,6 +18,7 @@
     get/2,
     get/3,
     put/3,
+    update/3,
     iterator/1,
     next/1,
     remove/2,
@@ -84,6 +85,10 @@
 %% See [http://erlang.org/doc/man/maps.html#type-iterator] and {@link iterator/1}.
 
 -export_type([ebpf_map/0, iterator/0]).
+
+-define(BPF_ANY, 0).
+-define(BPF_NOEXIST, 1).
+-define(BPF_EXIST, 2).
 
 %%%===================================================================
 %%% API
@@ -230,8 +235,9 @@ get(
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns the value associated with `Key' in eBPF map `Map' if `Map'
-%% contains `Key', otherwise returns `Default'.
+%% Associates `Key' with value `Value' and inserts the association
+%% into map `Map2'. If key `Key' already exists in map `Map1', the
+%% old associated value is replaced by value `Value'.
 %%
 %% See also [http://erlang.org/doc/man/maps.html#put-3].
 %% @end
@@ -250,9 +256,43 @@ put(
         Fd,
         to_binary(Key, KeySize),
         to_binary(Value, ValueSize),
-        0
+        ?BPF_ANY
     ),
     Map.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% If Key exists in `Map1', the old associated value is replaced by
+%% value `Value'. The function returns a new map `Map2' containing the
+%% new associated value.
+%%
+%% The call fails with a `{badkey,Key}' exception if no value is
+%% associated with `Key'.
+%%
+%% See also [http://erlang.org/doc/man/maps.html#update-3].
+%% @end
+%%--------------------------------------------------------------------
+-spec update(key(), value(), ebpf_map()) -> ebpf_map().
+update(
+    Key,
+    Value,
+    #bpf_map{
+        fd = Fd,
+        key_size = KeySize,
+        value_size = ValueSize
+    } = Map
+) ->
+    case
+        ebpf_lib:bpf_update_map_element(
+            Fd,
+            to_binary(Key, KeySize),
+            to_binary(Value, ValueSize),
+            ?BPF_EXIST
+        )
+    of
+        ok -> Map;
+        {error, enoent} -> throw({badkey, Key})
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
