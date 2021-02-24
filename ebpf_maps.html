@@ -1,0 +1,207 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Module ebpf_maps</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module ebpf_maps</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>   
+Creating and using eBPF maps from userspace.
+<p>Copyright © (C) 2021, moskar</p>
+
+<p><b>Authors:</b> moskar (<a href="mailto:moskar.drummer@gmail.com"><tt>moskar.drummer@gmail.com</tt></a>).</p>
+
+<h2><a name="description">Description</a></h2><p>   
+Creating and using eBPF maps from userspace.</p>
+  
+   This module contains an API for eBPF maps that mimics the built-in
+   <code>maps</code> module.
+<h2><a name="types">Data Types</a></h2>
+
+<h3 class="typedecl"><a name="type-ebpf_map">ebpf_map()</a></h3>
+<p><b>abstract datatype</b>: <tt>ebpf_map()</tt></p>
+<p>  An active eBPF map as returned by <a href="#new-5"><code>new/5</code></a>.</p>
+
+<h3 class="typedecl"><a name="type-iterator">iterator()</a></h3>
+<p><b>abstract datatype</b>: <tt>iterator()</tt></p>
+<p>  See <a href="http://erlang.org/doc/man/maps.html#type-iterator" target="_top"><tt>http://erlang.org/doc/man/maps.html#type-iterator</tt></a> and <a href="#iterator-1"><code>iterator/1</code></a>.</p>
+
+<h3 class="typedecl"><a name="type-key">key()</a></h3>
+<p><tt>key() = binary() | integer()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-map_option">map_option()</a></h3>
+<p><tt>map_option() = no_prealloc | read | write | zero_seed | prog_read | prog_write | clone | mmapable</tt></p>
+
+
+<h3 class="typedecl"><a name="type-type">type()</a></h3>
+<p><tt>type() = unspec | hash | array | prog_array | perf_event_array | percpu_hash | percpu_array | stack_trace | cgroup_array | lru_hash | lru_percpu_hash | lpm_trie | array_of_maps | hash_of_maps | devmap | sockmap | cpumap | xskmap | sockhash | cgroup_storage | reuseport_sockarray | percpu_cgroup_storage | queue | stack | sk_storage | devmap_hash | struct_ops | ringbuf | inode_storage | task_storage</tt></p>
+<p>  An <code>atom</code> used to specify the type of an eBPF map, see <a href="#create_map-4"><code>create_map/4</code></a></p>
+
+<h3 class="typedecl"><a name="type-value">value()</a></h3>
+<p><tt>value() = binary()</tt></p>
+
+
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#close-1">close/1</a></td><td>
+  Closes <code>Map</code>.</td></tr>
+<tr><td valign="top"><a href="#fd-1">fd/1</a></td><td>
+  Returns a File Descriptor for <code>Map</code>.</td></tr>
+<tr><td valign="top"><a href="#get-2">get/2</a></td><td>
+  Returns the value associated with <code>Key</code> in eBPF map <code>Map</code> if <code>Map</code>
+  contains <code>Key</code>.</td></tr>
+<tr><td valign="top"><a href="#get-3">get/3</a></td><td>
+  Returns the value associated with <code>Key</code> in eBPF map <code>Map</code> if <code>Map</code>
+  contains <code>Key</code>, otherwise returns <code>Default</code>.</td></tr>
+<tr><td valign="top"><a href="#iterator-1">iterator/1</a></td><td>
+  Returns a map iterator <code>Iterator</code> that can be used by <a href="#next-1"><code>next/1</code></a>
+  to traverse the key-value associations in a map.</td></tr>
+<tr><td valign="top"><a href="#new-4">new/4</a></td><td>
+  Same as <a href="#new-5"><code>new/5</code></a>, with default options.</td></tr>
+<tr><td valign="top"><a href="#new-5">new/5</a></td><td>  
+Returns a new empty eBPF map.</td></tr>
+<tr><td valign="top"><a href="#next-1">next/1</a></td><td>
+  Returns the next key-value association in <code>Iterator</code> and a new  
+iterator for the remaining associations in the iterator.</td></tr>
+<tr><td valign="top"><a href="#put-3">put/3</a></td><td>
+  Returns the value associated with <code>Key</code> in eBPF map <code>Map</code> if <code>Map</code>
+  contains <code>Key</code>, otherwise returns <code>Default</code>.</td></tr>
+<tr><td valign="top"><a href="#remove-2">remove/2</a></td><td>
+  Removes the <code>Key</code>, if it exists, and its associated value from <code>Map1</code>
+  and returns a new map <code>Map2</code> without key <code>Key</code>.</td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="close-1">close/1</a></h3>
+<div class="spec">
+<p><tt>close(Map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; ok | {error, atom()}</tt><br></p>
+<p> </p>
+</div><p>
+  Closes <code>Map</code>.</p>
+
+<h3 class="function"><a name="fd-1">fd/1</a></h3>
+<div class="spec">
+<p><tt>fd(Map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; non_neg_integer()</tt><br></p>
+<p> </p>
+</div><p><p>
+  Returns a File Descriptor for <code>Map</code>.</p>
+ 
+  Can be used for passing a map to eBPF programs, e.g. via <a href="ebpf_kern.html#ld_map_fd-2"><code>ebpf_kern:ld_map_fd/2</code></a>.</p>
+
+<h3 class="function"><a name="get-2">get/2</a></h3>
+<div class="spec">
+<p><tt>get(Key::<a href="#type-key">key()</a>, Bpf_map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; <a href="#type-value">value()</a></tt><br></p>
+<p> </p>
+</div><p><p>
+  Returns the value associated with <code>Key</code> in eBPF map <code>Map</code> if <code>Map</code>
+  contains <code>Key</code>.</p>
+ 
+  See also <a href="http://erlang.org/doc/man/maps.html#get-2" target="_top"><tt>http://erlang.org/doc/man/maps.html#get-2</tt></a>.</p>
+
+<h3 class="function"><a name="get-3">get/3</a></h3>
+<div class="spec">
+<p><tt>get(Key::<a href="#type-key">key()</a>, Bpf_map::<a href="#type-ebpf_map">ebpf_map()</a>, Default::<a href="#type-value">value()</a>) -&gt; <a href="#type-value">value()</a></tt><br></p>
+<p> </p>
+</div><p>
+  Returns the value associated with <code>Key</code> in eBPF map <code>Map</code> if <code>Map</code>
+  contains <code>Key</code>, otherwise returns <code>Default</code>.</p>
+
+<h3 class="function"><a name="iterator-1">iterator/1</a></h3>
+<div class="spec">
+<p><tt>iterator(Map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; <a href="#type-iterator">iterator()</a></tt><br></p>
+<p> </p>
+</div><p>
+  Returns a map iterator <code>Iterator</code> that can be used by <a href="#next-1"><code>next/1</code></a>
+  to traverse the key-value associations in a map.</p>
+
+<h3 class="function"><a name="new-4">new/4</a></h3>
+<div class="spec">
+<p><tt>new(Type::<a href="#type-type">type()</a>, KeySize::integer(), ValueSize::integer(), MaxEntries::integer()) -&gt; <a href="#type-ebpf_map">ebpf_map()</a> | {error, atom()}</tt><br></p>
+<p> </p>
+</div><p>
+  Same as <a href="#new-5"><code>new/5</code></a>, with default options.</p>
+
+<h3 class="function"><a name="new-5">new/5</a></h3>
+<div class="spec">
+<p><tt>new(Type::<a href="#type-type">type()</a>, KeySize::integer(), ValueSize::integer(), MaxEntries::integer(), Options::[<a href="#type-map_option">map_option()</a>]) -&gt; <a href="#type-ebpf_map">ebpf_map()</a> | {error, atom()}</tt><br></p>
+<p> </p>
+</div><p><p>  
+Returns a new empty eBPF map.</p>
+ 
+  <p>If successful, the returned map can be used from userspace via the
+  functions in this module, as well as shared with eBPF programs e.g.
+  via <a href="ebpf_kern.html#ld_map_fd-2"><code>ebpf_kern:ld_map_fd/2</code></a>.</p>
+ 
+  <p><code>KeySize</code> and <code>ValueSize</code> are given in octets.</p>
+ 
+  <p>The following <code>Options</code> are currently supported:</p>
+ 
+  <p><code>no_prealloc</code> - The kernel will not allocate the needed memory for
+  the map ahead of time.
+  Defaults to <code>false</code>, i.e. the map is preallocated.</p>
+ 
+  <p><code>read</code> - Limits userspace access to the map to read-only.
+  Defaults to <code>false</code>.</p>
+ 
+  <p><code>write</code> - Limits userspace access to the map to write-only.
+  Defaults to <code>false</code>.</p>
+ 
+  <p><code>zero_seed</code> - Initializes the map's hash function with a null seed,
+  Which can be useful for testing.
+  This option should not be used in production.
+  Defaults to <code>false</code>.</p>
+ 
+  <p><code>prog_read</code> - Limits the access to the map from eBPF programs to
+  read-only.
+  Defaults to <code>false</code>.</p>
+ 
+  <code>prog_write</code> - Limits the access to the map from eBPF programs to
+  write-only.
+  Defaults to <code>false</code>.
+ </p>
+
+<h3 class="function"><a name="next-1">next/1</a></h3>
+<div class="spec">
+<p><tt>next(Iterator::<a href="#type-iterator">iterator()</a>) -&gt; {<a href="#type-key">key()</a>, <a href="#type-value">value()</a>, <a href="#type-iterator">iterator()</a>} | none</tt><br></p>
+<p> </p>
+</div><p><p>
+  Returns the next key-value association in <code>Iterator</code> and a new  
+iterator for the remaining associations in the iterator.</p>
+ 
+  <p>If <code>Key</code> is currently the last key in the map, <code>none</code> is returned.</p>
+ 
+  Note: unlike Erlang/OTP built-in maps, eBPF maps can be altered
+  by kernelspace-resident eBPF programs, hence even if this function
+  returns <code>none</code> it does not mean that it will always return <code>none</code>.</p>
+
+<h3 class="function"><a name="put-3">put/3</a></h3>
+<div class="spec">
+<p><tt>put(Key::<a href="#type-key">key()</a>, Value::<a href="#type-value">value()</a>, Bpf_map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; <a href="#type-ebpf_map">ebpf_map()</a></tt><br></p>
+<p> </p>
+</div><p><p>
+  Returns the value associated with <code>Key</code> in eBPF map <code>Map</code> if <code>Map</code>
+  contains <code>Key</code>, otherwise returns <code>Default</code>.</p>
+ 
+  See also <a href="http://erlang.org/doc/man/maps.html#put-3" target="_top"><tt>http://erlang.org/doc/man/maps.html#put-3</tt></a>.</p>
+
+<h3 class="function"><a name="remove-2">remove/2</a></h3>
+<div class="spec">
+<p><tt>remove(Key::<a href="#type-key">key()</a>, Bpf_map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; <a href="#type-ebpf_map">ebpf_map()</a></tt><br></p>
+<p> </p>
+</div><p><p>
+  Removes the <code>Key</code>, if it exists, and its associated value from <code>Map1</code>
+  and returns a new map <code>Map2</code> without key <code>Key</code>.</p>
+ 
+  See also <a href="http://erlang.org/doc/man/maps.html#remove-2" target="_top"><tt>http://erlang.org/doc/man/maps.html#remove-2</tt></a>.</p>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc</i></p>
+</body>
+</html>
