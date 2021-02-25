@@ -22,6 +22,7 @@
     iterator/1,
     next/1,
     remove/2,
+    take/2,
     close/1,
     fd/1
 ]).
@@ -57,7 +58,7 @@
     | 'ringbuf'
     | 'inode_storage'
     | 'task_storage'.
-%% An `atom' used to specify the type of an eBPF map, see {@link create_map/4}
+%% An `atom' used to specify the type of an eBPF map, see {@link new/4}
 
 -type map_option() ::
     'no_prealloc'
@@ -137,7 +138,7 @@
     ValueSize :: integer(),
     MaxEntries :: integer(),
     Options :: [map_option()]
-) -> ebpf_map() | {'error', atom()}.
+) -> Map :: ebpf_map() | {'error', atom()}.
 new(Type, KeySize, ValueSize, MaxEntries, Options) ->
     Flags = read_map_options(Options),
     case
@@ -171,8 +172,7 @@ new(Type, KeySize, ValueSize, MaxEntries, Options) ->
     KeySize :: integer(),
     ValueSize :: integer(),
     MaxEntries :: integer()
-) -> ebpf_map() | {'error', atom()}.
-
+) -> Map :: ebpf_map() | {'error', atom()}.
 new(Type, KeySize, ValueSize, MaxEntries) ->
     new(Type, KeySize, ValueSize, MaxEntries, []).
 
@@ -184,7 +184,7 @@ new(Type, KeySize, ValueSize, MaxEntries) ->
 %% See also [http://erlang.org/doc/man/maps.html#get-2].
 %% @end
 %%--------------------------------------------------------------------
--spec get(key(), ebpf_map()) -> value().
+-spec get(Key :: key(), Map :: ebpf_map()) -> Value :: value().
 get(
     Key,
     #bpf_map{
@@ -211,7 +211,7 @@ get(
 %% contains `Key', otherwise returns `Default'.
 %% @end
 %%--------------------------------------------------------------------
--spec get(key(), ebpf_map(), value()) -> value().
+-spec get(Key :: key(), Map :: ebpf_map(), Default :: value()) -> value().
 get(
     Key,
     #bpf_map{
@@ -242,7 +242,7 @@ get(
 %% See also [http://erlang.org/doc/man/maps.html#put-3].
 %% @end
 %%--------------------------------------------------------------------
--spec put(key(), value(), ebpf_map()) -> ebpf_map().
+-spec put(Key :: key(), Value :: value(), Map1 :: ebpf_map()) -> Map2 :: ebpf_map().
 put(
     Key,
     Value,
@@ -272,7 +272,7 @@ put(
 %% See also [http://erlang.org/doc/man/maps.html#update-3].
 %% @end
 %%--------------------------------------------------------------------
--spec update(key(), value(), ebpf_map()) -> ebpf_map().
+-spec update(Key :: key(), Value :: value(), Map1 :: ebpf_map()) -> Map2 :: ebpf_map().
 update(
     Key,
     Value,
@@ -300,7 +300,7 @@ update(
 %% to traverse the key-value associations in a map.
 %% @end
 %%--------------------------------------------------------------------
--spec iterator(ebpf_map()) -> iterator().
+-spec iterator(Map :: ebpf_map()) -> Iterator :: iterator().
 iterator(Map) -> {<<>>, Map}.
 
 %%--------------------------------------------------------------------
@@ -315,7 +315,8 @@ iterator(Map) -> {<<>>, Map}.
 %% returns `none' it does not mean that it will always return `none'.
 %% @end
 %%--------------------------------------------------------------------
--spec next(iterator()) -> {key(), value(), iterator()} | none.
+-spec next(Iterator :: iterator()) ->
+    {Key :: key(), Value :: value(), Iterator2 :: iterator()} | none.
 next({<<>>, Map} = _Iterator) ->
     case ebpf_lib:bpf_get_map_first_key(fd(Map), Map#bpf_map.key_size) of
         {ok, NextKey} -> {NextKey, ebpf_maps:get(NextKey, Map), {NextKey, Map}};
@@ -335,13 +336,27 @@ next({Key, Map} = _Iterator) ->
 %% See also [http://erlang.org/doc/man/maps.html#remove-2].
 %% @end
 %%--------------------------------------------------------------------
--spec remove(key(), ebpf_map()) -> ebpf_map().
+-spec remove(Key :: key(), Map1 :: ebpf_map()) -> Map2 :: ebpf_map().
 remove(Key, #bpf_map{fd = Fd, key_size = KeySize} = Map1) ->
     case ebpf_lib:bpf_delete_map_element(Fd, to_binary(Key, KeySize)) of
         ok -> Map1;
         {error, enoent} -> Map1;
         {error, Other} -> {error, Other}
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Removes `Key', if it exists, and its associated value from `Map1'
+%% and returns a tuple with the removed `Value' and the new map `Map2'
+%% without key `Key'. If the key does not exist `error' is returned.
+%%
+%% See also [http://erlang.org/doc/man/maps.html#take-2].
+%% @end
+%%--------------------------------------------------------------------
+-spec take(Key :: key(), Map1 :: ebpf_map()) -> {Value :: value(), Map2 :: ebpf_map()} | error.
+take(Key, #bpf_map{type = queue} = Map) -> take_via_lookup_and_delete(Key, Map);
+take(Key, #bpf_map{type = stack} = Map) -> take_via_lookup_and_delete(Key, Map);
+take(Key, Map) -> take_via_get_and_remove(Key, Map).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -359,12 +374,35 @@ close(Map) ->
 %% Can be used for passing a map to eBPF programs, e.g. via {@link ebpf_kern:ld_map_fd/2}.
 %% @end
 %%--------------------------------------------------------------------
--spec fd(ebpf_map()) -> non_neg_integer().
+-spec fd(Map :: ebpf_map()) -> non_neg_integer().
 fd(Map) -> Map#bpf_map.fd.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+-spec take_via_lookup_and_delete(key(), ebpf_map()) -> {value(), ebpf_map()} | error.
+take_via_lookup_and_delete(Key, Map) ->
+    case
+        ebpf_lib:bpf_lookup_and_delete_map_element(
+            Map#bpf_map.fd,
+            to_binary(Key, Map#bpf_map.key_size),
+            Map#bpf_map.value_size
+        )
+    of
+        {ok, Value} -> {Value, Map};
+        {error, enoent} -> error
+    end.
+
+-spec take_via_get_and_remove(key(), ebpf_map()) -> {value(), ebpf_map()} | error.
+take_via_get_and_remove(Key, Map) ->
+    case catch ebpf_maps:get(Key, Map) of
+        {badkey, Key} ->
+            error;
+        Value ->
+            remove(Key, Map),
+            {Value, Map}
+    end.
 
 -spec read_map_options([map_option()]) -> non_neg_integer().
 read_map_options(Options) ->
