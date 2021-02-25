@@ -297,13 +297,14 @@ test_user_map_hash_1(_Config) ->
             Value = <<5, 6, 7, 8>>,
             Map1 = ebpf_maps:put(Key, Value, Map0),
             Value = ebpf_maps:get(Key, Map1),
-            Map2 = ebpf_maps:remove(Key, Map1),
+            {Value, Map2} = ebpf_maps:take(Key, Map1),
             Default = <<"leet">>,
-            Default = ebpf_maps:get(Key, Map1, Default),
+            Default = ebpf_maps:get(Key, Map2, Default),
+            {badkey, Key} = (catch ebpf_maps:get(Key, Map2)),
             Map3 = ebpf_maps:remove(Key, Map2),
-
             ok = ebpf_maps:close(Map3)
     end.
+
 test_user_map_hash_2() -> [].
 test_user_map_hash_2(_Config) ->
     Keys = lists:seq(0, 255),

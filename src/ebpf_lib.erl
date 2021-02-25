@@ -19,6 +19,7 @@
     bpf_create_map/5,
     bpf_update_map_element/4,
     bpf_lookup_map_element/4,
+    bpf_lookup_and_delete_map_element/3,
     bpf_delete_map_element/2,
     bpf_get_map_next_key/2,
     bpf_get_map_first_key/2,
@@ -74,6 +75,14 @@ bpf_update_map_element(_MapFd, _Key, _Value, _Flags) ->
 -spec bpf_lookup_map_element(integer(), binary(), non_neg_integer(), non_neg_integer()) ->
     {'ok', binary()} | {'error', atom()}.
 bpf_lookup_map_element(_MapFd, _Key, _ValueSize, _Flags) ->
+    not_loaded(?LINE).
+
+-spec bpf_lookup_and_delete_map_element(
+    integer(),
+    binary(),
+    non_neg_integer()
+) -> {'ok', binary()} | {'error', atom()}.
+bpf_lookup_and_delete_map_element(_MapFd, _Key, _ValueSize) ->
     not_loaded(?LINE).
 
 -spec bpf_delete_map_element(integer(), binary()) -> 'ok' | {'error', atom()}.
