@@ -1,6 +1,6 @@
 @author Oskar Mazerath <moskar.drummer@gmail.com>
 @copyright 2021 Oskar Mazerath
-@version 0.2.0
+@version 0.2.1
 @title ebpf - Erlang eBPF Library
 
 @doc `ebpf' is an Erlang library for generating and interacting
