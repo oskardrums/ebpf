@@ -41,7 +41,7 @@ Creating and using eBPF maps from userspace.</p>
 
 <h3 class="typedecl"><a name="type-type">type()</a></h3>
 <p><tt>type() = unspec | hash | array | prog_array | perf_event_array | percpu_hash | percpu_array | stack_trace | cgroup_array | lru_hash | lru_percpu_hash | lpm_trie | array_of_maps | hash_of_maps | devmap | sockmap | cpumap | xskmap | sockhash | cgroup_storage | reuseport_sockarray | percpu_cgroup_storage | queue | stack | sk_storage | devmap_hash | struct_ops | ringbuf | inode_storage | task_storage</tt></p>
-<p>  An <code>atom</code> used to specify the type of an eBPF map, see <a href="#create_map-4"><code>create_map/4</code></a></p>
+<p>  An <code>atom</code> used to specify the type of an eBPF map, see <a href="#new-4"><code>new/4</code></a></p>
 
 <h3 class="typedecl"><a name="type-value">value()</a></h3>
 <p><tt>value() = binary() | integer()</tt></p>
@@ -74,6 +74,10 @@ iterator for the remaining associations in the iterator.</td></tr>
 <tr><td valign="top"><a href="#remove-2">remove/2</a></td><td>
   Removes the <code>Key</code>, if it exists, and its associated value from <code>Map1</code>
   and returns a new map <code>Map2</code> without key <code>Key</code>.</td></tr>
+<tr><td valign="top"><a href="#take-2">take/2</a></td><td>
+  Removes <code>Key</code>, if it exists, and its associated value from <code>Map1</code>
+  and returns a tuple with the removed <code>Value</code> and the new map <code>Map2</code>
+  without key <code>Key</code>.</td></tr>
 <tr><td valign="top"><a href="#update-3">update/3</a></td><td>
   If Key exists in <code>Map1</code>, the old associated value is replaced by
   value <code>Value</code>.</td></tr>
@@ -99,7 +103,7 @@ iterator for the remaining associations in the iterator.</td></tr>
 
 <h3 class="function"><a name="get-2">get/2</a></h3>
 <div class="spec">
-<p><tt>get(Key::<a href="#type-key">key()</a>, Bpf_map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; <a href="#type-value">value()</a></tt><br></p>
+<p><tt>get(Key::<a href="#type-key">key()</a>, Map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; Value::<a href="#type-value">value()</a></tt><br></p>
 <p> </p>
 </div><p><p>
   Returns the value associated with <code>Key</code> in eBPF map <code>Map</code> if <code>Map</code>
@@ -109,7 +113,7 @@ iterator for the remaining associations in the iterator.</td></tr>
 
 <h3 class="function"><a name="get-3">get/3</a></h3>
 <div class="spec">
-<p><tt>get(Key::<a href="#type-key">key()</a>, Bpf_map::<a href="#type-ebpf_map">ebpf_map()</a>, Default::<a href="#type-value">value()</a>) -&gt; <a href="#type-value">value()</a></tt><br></p>
+<p><tt>get(Key::<a href="#type-key">key()</a>, Map::<a href="#type-ebpf_map">ebpf_map()</a>, Default::<a href="#type-value">value()</a>) -&gt; <a href="#type-value">value()</a></tt><br></p>
 <p> </p>
 </div><p>
   Returns the value associated with <code>Key</code> in eBPF map <code>Map</code> if <code>Map</code>
@@ -117,7 +121,7 @@ iterator for the remaining associations in the iterator.</td></tr>
 
 <h3 class="function"><a name="iterator-1">iterator/1</a></h3>
 <div class="spec">
-<p><tt>iterator(Map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; <a href="#type-iterator">iterator()</a></tt><br></p>
+<p><tt>iterator(Map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; Iterator::<a href="#type-iterator">iterator()</a></tt><br></p>
 <p> </p>
 </div><p>
   Returns a map iterator <code>Iterator</code> that can be used by <a href="#next-1"><code>next/1</code></a>
@@ -125,14 +129,14 @@ iterator for the remaining associations in the iterator.</td></tr>
 
 <h3 class="function"><a name="new-4">new/4</a></h3>
 <div class="spec">
-<p><tt>new(Type::<a href="#type-type">type()</a>, KeySize::integer(), ValueSize::integer(), MaxEntries::integer()) -&gt; <a href="#type-ebpf_map">ebpf_map()</a> | {error, atom()}</tt><br></p>
+<p><tt>new(Type::<a href="#type-type">type()</a>, KeySize::integer(), ValueSize::integer(), MaxEntries::integer()) -&gt; Map::<a href="#type-ebpf_map">ebpf_map()</a> | {error, atom()}</tt><br></p>
 <p> </p>
 </div><p>
   Same as <a href="#new-5"><code>new/5</code></a>, with default options.</p>
 
 <h3 class="function"><a name="new-5">new/5</a></h3>
 <div class="spec">
-<p><tt>new(Type::<a href="#type-type">type()</a>, KeySize::integer(), ValueSize::integer(), MaxEntries::integer(), Options::[<a href="#type-map_option">map_option()</a>]) -&gt; <a href="#type-ebpf_map">ebpf_map()</a> | {error, atom()}</tt><br></p>
+<p><tt>new(Type::<a href="#type-type">type()</a>, KeySize::integer(), ValueSize::integer(), MaxEntries::integer(), Options::[<a href="#type-map_option">map_option()</a>]) -&gt; Map::<a href="#type-ebpf_map">ebpf_map()</a> | {error, atom()}</tt><br></p>
 <p> </p>
 </div><p><p>  
 Returns a new empty eBPF map.</p>
@@ -171,7 +175,7 @@ Returns a new empty eBPF map.</p>
 
 <h3 class="function"><a name="next-1">next/1</a></h3>
 <div class="spec">
-<p><tt>next(Iterator::<a href="#type-iterator">iterator()</a>) -&gt; {<a href="#type-key">key()</a>, <a href="#type-value">value()</a>, <a href="#type-iterator">iterator()</a>} | none</tt><br></p>
+<p><tt>next(Iterator::<a href="#type-iterator">iterator()</a>) -&gt; {Key::<a href="#type-key">key()</a>, Value::<a href="#type-value">value()</a>, Iterator2::<a href="#type-iterator">iterator()</a>} | none</tt><br></p>
 <p> </p>
 </div><p><p>
   Returns the next key-value association in <code>Iterator</code> and a new  
@@ -185,7 +189,7 @@ iterator for the remaining associations in the iterator.</p>
 
 <h3 class="function"><a name="put-3">put/3</a></h3>
 <div class="spec">
-<p><tt>put(Key::<a href="#type-key">key()</a>, Value::<a href="#type-value">value()</a>, Bpf_map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; <a href="#type-ebpf_map">ebpf_map()</a></tt><br></p>
+<p><tt>put(Key::<a href="#type-key">key()</a>, Value::<a href="#type-value">value()</a>, Map1::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; Map2::<a href="#type-ebpf_map">ebpf_map()</a></tt><br></p>
 <p> </p>
 </div><p><p>
   Associates <code>Key</code> with value <code>Value</code> and inserts the association
@@ -196,7 +200,7 @@ iterator for the remaining associations in the iterator.</p>
 
 <h3 class="function"><a name="remove-2">remove/2</a></h3>
 <div class="spec">
-<p><tt>remove(Key::<a href="#type-key">key()</a>, Bpf_map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; <a href="#type-ebpf_map">ebpf_map()</a></tt><br></p>
+<p><tt>remove(Key::<a href="#type-key">key()</a>, Map1::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; Map2::<a href="#type-ebpf_map">ebpf_map()</a></tt><br></p>
 <p> </p>
 </div><p><p>
   Removes the <code>Key</code>, if it exists, and its associated value from <code>Map1</code>
@@ -204,9 +208,20 @@ iterator for the remaining associations in the iterator.</p>
  
   See also <a href="http://erlang.org/doc/man/maps.html#remove-2" target="_top"><tt>http://erlang.org/doc/man/maps.html#remove-2</tt></a>.</p>
 
+<h3 class="function"><a name="take-2">take/2</a></h3>
+<div class="spec">
+<p><tt>take(Key::<a href="#type-key">key()</a>, Map1::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; {Value::<a href="#type-value">value()</a>, Map2::<a href="#type-ebpf_map">ebpf_map()</a>} | error</tt><br></p>
+<p> </p>
+</div><p><p>
+  Removes <code>Key</code>, if it exists, and its associated value from <code>Map1</code>
+  and returns a tuple with the removed <code>Value</code> and the new map <code>Map2</code>
+  without key <code>Key</code>. If the key does not exist <code>error</code> is returned.</p>
+ 
+  See also <a href="http://erlang.org/doc/man/maps.html#take-2" target="_top"><tt>http://erlang.org/doc/man/maps.html#take-2</tt></a>.</p>
+
 <h3 class="function"><a name="update-3">update/3</a></h3>
 <div class="spec">
-<p><tt>update(Key::<a href="#type-key">key()</a>, Value::<a href="#type-value">value()</a>, Bpf_map::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; <a href="#type-ebpf_map">ebpf_map()</a></tt><br></p>
+<p><tt>update(Key::<a href="#type-key">key()</a>, Value::<a href="#type-value">value()</a>, Map1::<a href="#type-ebpf_map">ebpf_map()</a>) -&gt; Map2::<a href="#type-ebpf_map">ebpf_map()</a></tt><br></p>
 <p> </p>
 </div><p><p>
   If Key exists in <code>Map1</code>, the old associated value is replaced by
