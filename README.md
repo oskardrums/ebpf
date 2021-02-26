@@ -16,10 +16,12 @@ The following modules are currently included:
 Documentation
 -------------
 
-    $ rebar3 edoc
-
 The documentation for the latest release can be browsed on [hexdocs](https://hexdocs.pm/ebpf/).
 Documentation for the `main` branch is also available [here](https://oskardrums.github.io/ebpf/).
+`ebpf` is documented with [edoc](http://erlang.org/doc/apps/edoc/chapter.html), the docs can be
+built locally with
+
+    $ rebar3 edoc
 
 Usage
 -----
@@ -42,7 +44,7 @@ ok = ebpf_user:detach_xdp("lo"), % Now, that's better :)
 ok = ebpf_user:close(XdpProg).
 ```
 
-For projects that build with `rebar3`, add `ebpf` as a dependency in `rebar.config`:
+Add `ebpf` as a dependency in `rebar.config`:
 
 ```erlang
 % From hex
@@ -51,10 +53,31 @@ For projects that build with `rebar3`, add `ebpf` as a dependency in `rebar.conf
 {deps, [{ebpf, {git, "https://github.com/oskardrums/ebpf.git", "main"}}]}.
 ```
 
+{error, eperm}
+--------------
+
+Most BPF operations require elevated permissions on most Linux systems.
+Lack of permissions usually manifests in `ebpf` in function calls failing with
+`{error, eperm}`.
+To allow `ebpf` to run privileged operations, BEAM needs to be given permission to do so.
+The quickest way to do that for local testing is to run your program as super user, e.g.
+
+	$ sudo `which rebar3` shell
+
+For production systems, Linux capabilities should be given to the user or to the BEAM executable.
+For most systems, most `bpf(2)` operations demand `CAP_SYS_ADMIN` capability, and some XDP operations
+demand `CAP_NET_ADMIN`.
+
+
 Build
 -----
 
     $ rebar3 compile
+
+`ebpf` uses NIFs to communicate with the Linux kernel eBPF system.
+You will need `make`, a C compiler and Linux headers for `rebar3` to build
+the `.so` that contains those NIFs.
+
 
 Test
 ----
