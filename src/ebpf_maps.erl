@@ -99,9 +99,11 @@
 %% @doc
 %% Returns a new empty eBPF map.
 %%
-%% If successful, the returned map can be used from userspace via the
+%% If successful, the returned map `Map' contains a handle to an
+%% underlying eBPF map which can be used from userspace via the
 %% functions in this module, as well as shared with eBPF programs e.g.
 %% via {@link ebpf_kern:ld_map_fd/2}.
+%% When `Map' is no longer needed it should be closed via {@link close/1}.
 %%
 %% `KeySize' and `ValueSize' are given in octets.
 %%
@@ -298,6 +300,9 @@ update(
 %% @doc
 %% Returns a map iterator `Iterator' that can be used by {@link next/1}
 %% to traverse the key-value associations in a map.
+%%
+%% When `Iterator' is no longer needed, it should be closed via {@link close/1}
+%% which is the same as closing `Map'.
 %% @end
 %%--------------------------------------------------------------------
 -spec iterator(Map :: ebpf_map()) -> Iterator :: iterator().
@@ -305,8 +310,8 @@ iterator(Map) -> {<<>>, Map}.
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns the next key-value association in `Iterator' and a new
-%% iterator for the remaining associations in the iterator.
+%% Returns the next key-value association in `Iterator1' and a new
+%% iterator `Iterator2' for the remaining associations in the iterator.
 %%
 %% If `Key' is currently the last key in the map, `none' is returned.
 %%
@@ -315,7 +320,7 @@ iterator(Map) -> {<<>>, Map}.
 %% returns `none' it does not mean that it will always return `none'.
 %% @end
 %%--------------------------------------------------------------------
--spec next(Iterator :: iterator()) ->
+-spec next(Iterator1 :: iterator()) ->
     {Key :: key(), Value :: value(), Iterator2 :: iterator()} | none.
 next({<<>>, Map} = _Iterator) ->
     case ebpf_lib:bpf_get_map_first_key(fd(Map), Map#bpf_map.key_size) of
@@ -360,12 +365,22 @@ take(Key, Map) -> take_via_get_and_remove(Key, Map).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Closes `Map'.
+%% Closes `MapOrIter'.
+%%
+%% This function closes the system handle to the underlying eBPF map.
+%% `MapOrIter', or any map that uses the same handle, should not be
+%% used after closing it with this function. The underlying eBPF map
+%% might still be alive in the kernel if other handles to it exists,
+%% but the handle contained in `MapOrIter' is released and is no
+%% longer viable.
+%%
 %% @end
 %%--------------------------------------------------------------------
--spec close(Map :: ebpf_map()) -> 'ok' | {'error', atom()}.
-close(Map) ->
-    ebpf_lib:bpf_close(Map#bpf_map.fd).
+-spec close(MapOrIter :: ebpf_map() | iterator()) -> 'ok' | {'error', atom()}.
+close(Map) when is_record(Map, bpf_map) ->
+    ebpf_lib:bpf_close(Map#bpf_map.fd);
+close({_, Map} = _Iterator) when is_record(Map, bpf_map) ->
+    close(Map).
 
 %%--------------------------------------------------------------------
 %% @doc
