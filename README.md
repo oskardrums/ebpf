@@ -59,15 +59,18 @@ Add `ebpf` as a dependency in `rebar.config`:
 Most BPF operations require elevated permissions on most Linux systems.
 Lack of permissions usually manifests in `ebpf` in function calls failing with
 `{error, eperm}`.
+
 To allow `ebpf` to run privileged operations, BEAM needs to be given permission to do so.
 The quickest way to do that for local testing is to run your program as super user, e.g.
 
 	$ sudo `which rebar3` shell
 
 For production systems, Linux capabilities should be given to the user or to the BEAM executable.
-For most systems, most `bpf(2)` operations demand `CAP_SYS_ADMIN` capability, and some XDP operations
+Most `bpf(2)` operations demand `CAP_SYS_ADMIN` capability, and some XDP operations
 demand `CAP_NET_ADMIN`.
 
+Since Linux 4.4, `socket_filter` type eBPF programs can be loaded without elevated permissions
+under some conditions. For more information see [the `bpf(2)` man page](https://man7.org/linux/man-pages/man2/bpf.2.html#NOTES).
 
 Build
 -----
