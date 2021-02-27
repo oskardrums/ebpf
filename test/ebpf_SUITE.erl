@@ -11,6 +11,7 @@
 %% Note: This directive should only be used in test suites.
 -compile(nowarn_export_all).
 -compile(export_all).
+-compile({parse_transform, ebpf_pt}).
 
 -include_lib("common_test/include/ct.hrl").
 -include("ebpf_kern.hrl").
@@ -183,7 +184,8 @@ groups() ->
             readme_example_1,
             test_load_cf_ttl_1,
             test_load_cf_ttl_2
-        ]}
+        ]},
+        {ebpf_pt_ct, [sequence], [test_pt_1, test_pt_2]}
     ].
 
 %%--------------------------------------------------------------------
@@ -203,7 +205,7 @@ groups() ->
 %% @end
 %%--------------------------------------------------------------------
 all() ->
-    [{group, ebpf_kern_ct}, {group, ebpf_user_ct}].
+    [{group, ebpf_kern_ct}, {group, ebpf_user_ct}, {group, ebpf_pt_ct}].
 
 %%--------------------------------------------------------------------
 %% TEST CASES
@@ -568,3 +570,11 @@ cf_ttl_instructions(MapFd) ->
         ),
         ebpf_kern:return(-1)
     ]).
+
+test_pt_1() -> [].
+test_pt_1(_Config) ->
+    ebpf_kern:fun2bpf(xdp, fun(Packet) -> 1337 end) = ebpf_kern:return(1337).
+
+test_pt_2() -> [].
+test_pt_2(_Config) ->
+    ebpf_kern:fun2bpf(xdp, fun(Packet) -> 16#dead end).

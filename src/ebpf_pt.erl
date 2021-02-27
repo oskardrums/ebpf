@@ -1,0 +1,836 @@
+%% ``Licensed under the Apache License, Version 2.0 (the "License");
+%% you may not use this file except in compliance with the License.
+%% You may obtain a copy of the License at
+%%
+%%     http://www.apache.org/licenses/LICENSE-2.0
+%%
+%% Unless required by applicable law or agreed to in writing, software
+%% distributed under the License is distributed on an "AS IS" BASIS,
+%% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%% See the License for the specific language governing permissions and
+%% limitations under the License.
+%%
+%% The Initial Developer of the Original Code is Ericsson Utvecklings AB.
+%% Portions created by Ericsson are Copyright 1999, Ericsson Utvecklings
+%% AB. All Rights Reserved.''
+%%
+%%     $Id$
+%%
+-module(ebpf_pt).
+
+%% An identity transformer of Erlang abstract syntax.
+
+%% This module only traverses legal Erlang code. This is most noticeable
+%% in guards where only a limited number of expressions are allowed.
+%% N.B. if this module is to be used as a basis for transforms then
+%% all the error cases must be handled otherwise this module just crashes!
+
+-record(cc, {filename = "" :: string()}).
+
+-export([parse_transform/2, parse_transform_info/0, format_error/1]).
+
+parse_transform(Forms, _Options) ->
+    case catch forms(Forms) of
+        {error, Anno, Reason, Cc} ->
+            {error, [{Cc#cc.filename, [{Anno, ?MODULE, Reason}]}], []};
+        Forms1 ->
+            Forms1
+    end.
+
+parse_transform_info() ->
+    #{columns => true}.
+
+format_error(1) ->
+    "Second parameter of ebpf_kern:fun2bpf/2 is not a literal fun".
+forms(Forms0) ->
+    Cc0 = #cc{},
+    {Forms1, _Cc1} = forms(Forms0, Cc0),
+    Forms1.
+
+forms([F0 | Fs0], Cc0) ->
+    {F1, Cc1} = form(F0, Cc0),
+    {Fs1, Cc2} = forms(Fs0, Cc1),
+    {[F1 | Fs1], Cc2};
+forms([], Cc) ->
+    {[], Cc}.
+
+%% -type form(Form) -> Form.
+%%  Here we show every known form and valid internal structure. We do not
+%%  that the ordering is correct!
+
+%% First the various attributes.
+form({attribute, Anno, module, Mod}, Cc0) ->
+    {{attribute, Anno, module, Mod}, Cc0};
+%This is valid anywhere.
+form({attribute, Anno, file, {File, Line}}, Cc0) ->
+    {{attribute, Anno, file, {File, Line}}, Cc0#cc{filename = File}};
+form({attribute, Anno, export, Es0}, Cc0) ->
+    {Es1, Cc1} = farity_list(Es0, Cc0),
+    {{attribute, Anno, export, Es1}, Cc1};
+form({attribute, Anno, import, {Mod, Is0}}, Cc0) ->
+    {Is1, Cc1} = farity_list(Is0, Cc0),
+    {{attribute, Anno, import, {Mod, Is1}}, Cc1};
+form({attribute, Anno, export_type, Es0}, Cc0) ->
+    {Es1, Cc1} = farity_list(Es0, Cc0),
+    {{attribute, Anno, export_type, Es1}, Cc1};
+form({attribute, Anno, optional_callbacks, Es0}, Cc0) ->
+    try farity_list(Es0, Cc0) of
+        {Es1, Cc1} ->
+            {{attribute, Anno, optional_callbacks, Es1}, Cc1}
+    catch
+        _:_ ->
+            {{attribute, Anno, optional_callbacks, Es0}, Cc0}
+    end;
+form({attribute, Anno, compile, C}, Cc0) ->
+    {{attribute, Anno, compile, C}, Cc0};
+form({attribute, Anno, record, {Name, Defs0}}, Cc0) ->
+    {Defs1, Cc1} = record_defs(Defs0, Cc0),
+    {{attribute, Anno, record, {Name, Defs1}}, Cc1};
+form({attribute, Anno, asm, {function, N, A, Code}}, Cc0) ->
+    {{attribute, Anno, asm, {function, N, A, Code}}, Cc0};
+form({attribute, Anno, type, {N, T, Vs}}, Cc0) ->
+    {T1, Cc1} = type(T, Cc0),
+    {Vs1, Cc2} = variable_list(Vs, Cc1),
+    {{attribute, Anno, type, {N, T1, Vs1}}, Cc2};
+form({attribute, Anno, opaque, {N, T, Vs}}, Cc0) ->
+    {T1, Cc1} = type(T, Cc0),
+    {Vs1, Cc2} = variable_list(Vs, Cc1),
+    {{attribute, Anno, opaque, {N, T1, Vs1}}, Cc2};
+form({attribute, Anno, spec, {{N, A}, FTs}}, Cc0) ->
+    {FTs1, Cc1} = function_type_list(FTs, Cc0),
+    {{attribute, Anno, spec, {{N, A}, FTs1}}, Cc1};
+form({attribute, Anno, spec, {{M, N, A}, FTs}}, Cc0) ->
+    {FTs1, Cc1} = function_type_list(FTs, Cc0),
+    {{attribute, Anno, spec, {{M, N, A}, FTs1}}, Cc1};
+form({attribute, Anno, callback, {{N, A}, FTs}}, Cc0) ->
+    {FTs1, Cc1} = function_type_list(FTs, Cc0),
+    {{attribute, Anno, callback, {{N, A}, FTs1}}, Cc1};
+%The general attribute.
+form({attribute, Anno, Attr, Val}, Cc0) ->
+    {{attribute, Anno, Attr, Val}, Cc0};
+form({function, Anno, Name0, Arity0, Clauses0}, Cc0) ->
+    {{Name, Arity, Clauses}, Cc1} = function(Name0, Arity0, Clauses0, Cc0),
+    {{function, Anno, Name, Arity, Clauses}, Cc1};
+%% Extra forms from the parser.
+form({error, E}, Cc0) ->
+    {{error, E}, Cc0};
+form({warning, W}, Cc0) ->
+    {{warning, W}, Cc0};
+form({eof, Location}, Cc0) ->
+    {{eof, Location}, Cc0}.
+
+%% -type farity_list([Farity]) -> [Farity] when Farity <= {atom(),integer()}.
+
+farity_list([{Name, Arity} | Fas], Cc0) ->
+    {T, Cc1} = farity_list(Fas, Cc0),
+    {[{Name, Arity} | T], Cc1};
+farity_list([], Cc0) ->
+    {[], Cc0}.
+
+%% -type variable_list([Var]) -> [Var]
+
+variable_list([{var, Anno, Var} | Vs], Cc0) ->
+    {T, Cc1} = variable_list(Vs, Cc0),
+    {[{var, Anno, Var} | T], Cc1};
+variable_list([], Cc0) ->
+    {[], Cc0}.
+
+%% -type record_defs([RecDef]) -> [RecDef].
+%%  N.B. Field names are full expressions here but only atoms are allowed
+%%  by the *parser*!
+
+record_defs([{record_field, Anno, {atom, Aa, A}, Val0} | Is], Cc0) ->
+    {Val1, Cc1} = expr(Val0, Cc0),
+    {Is1, Cc2} = record_defs(Is, Cc1),
+    {[{record_field, Anno, {atom, Aa, A}, Val1} | Is1], Cc2};
+record_defs([{record_field, Anno, {atom, Aa, A}} | Is], Cc0) ->
+    {Is1, Cc1} = record_defs(Is, Cc0),
+    {[{record_field, Anno, {atom, Aa, A}} | Is1], Cc1};
+record_defs([{typed_record_field, {record_field, Anno, {atom, Aa, A}, Val0}, Type} | Is], Cc0) ->
+    {Val1, Cc1} = expr(Val0, Cc0),
+    {Type1, Cc2} = type(Type, Cc1),
+    {Is1, Cc3} = record_defs(Is, Cc2),
+    {[{typed_record_field, {record_field, Anno, {atom, Aa, A}, Val1}, Type1} | Is1], Cc3};
+record_defs([{typed_record_field, {record_field, Anno, {atom, Aa, A}}, Type} | Is], Cc0) ->
+    {Type1, Cc1} = type(Type, Cc0),
+    {Is1, Cc2} = record_defs(Is, Cc1),
+    {[{typed_record_field, {record_field, Anno, {atom, Aa, A}}, Type1} | Is1], Cc2};
+record_defs([], Cc0) ->
+    {[], Cc0}.
+
+%% -type function(atom(), integer(), [Clause]) -> {atom(),integer(),[Clause]}.
+
+function(Name, Arity, Clauses0, Cc0) ->
+    {Clauses1, Cc1} = clauses(Clauses0, Cc0),
+    {{Name, Arity, Clauses1}, Cc1}.
+
+%% -type clauses([Clause]) -> [Clause].
+
+clauses([C0 | Cs], Cc0) ->
+    {C1, Cc1} = clause(C0, Cc0),
+    {Cs1, Cc2} = clauses(Cs, Cc1),
+    {[C1 | Cs1], Cc2};
+clauses([], Cc0) ->
+    {[], Cc0}.
+
+%% -type clause(Clause) -> Clause.
+
+clause({clause, Anno, H0, G0, B0}, Cc0) ->
+    {H1, Cc1} = head(H0, Cc0),
+    {G1, Cc2} = guard(G0, Cc1),
+    {B1, Cc3} = exprs(B0, Cc2),
+    {{clause, Anno, H1, G1, B1}, Cc3}.
+
+%% -type head([Pattern]) -> [Pattern].
+
+head(Ps, Cc0) -> patterns(Ps, Cc0).
+
+%% -type patterns([Pattern]) -> [Pattern].
+%%  These patterns are processed "sequentially" for purposes of variable
+%%  definition etc.
+
+patterns([P0 | Ps], Cc0) ->
+    {P1, Cc1} = pattern(P0, Cc0),
+    {Ps1, Cc2} = patterns(Ps, Cc1),
+    {[P1 | Ps1], Cc2};
+patterns([], Cc0) ->
+    {[], Cc0}.
+
+%% -type pattern(Pattern) -> Pattern.
+%%  N.B. Only valid patterns are included here.
+
+pattern({var, Anno, V}, Cc0) ->
+    {{var, Anno, V}, Cc0};
+pattern({match, Anno, L0, R0}, Cc0) ->
+    {L1, Cc1} = pattern(L0, Cc0),
+    {R1, Cc2} = pattern(R0, Cc1),
+    {{match, Anno, L1, R1}, Cc2};
+pattern(
+    {call, Anno, {remote, _Anno2, {atom, _Anno3, ebpf_kern}, {atom, _Anno4, fun2bpf}}, As0},
+    Cc0
+) ->
+    transform_call(Anno, As0, Cc0);
+pattern({call, Anno, F0, As0}, Cc0) ->
+    %% N.B. If F an atom then call to local function or BIF, if F a
+    %% remote structure (see below) then call to other module,
+    %% otherwise apply to "function".
+    {F1, Cc1} = expr(F0, Cc0),
+    {As1, Cc2} = expr_list(As0, Cc1),
+    {{call, Anno, F1, As1}, Cc2};
+pattern({integer, Anno, I}, Cc0) ->
+    {{integer, Anno, I}, Cc0};
+pattern({char, Anno, C}, Cc0) ->
+    {{char, Anno, C}, Cc0};
+pattern({float, Anno, F}, Cc0) ->
+    {{float, Anno, F}, Cc0};
+pattern({atom, Anno, A}, Cc0) ->
+    {{atom, Anno, A}, Cc0};
+pattern({string, Anno, S}, Cc0) ->
+    {{string, Anno, S}, Cc0};
+pattern({nil, Anno}, Cc0) ->
+    {{nil, Anno}, Cc0};
+pattern({cons, Anno, H0, T0}, Cc0) ->
+    {H1, Cc1} = pattern(H0, Cc0),
+    {T1, Cc2} = pattern(T0, Cc1),
+    {{cons, Anno, H1, T1}, Cc2};
+pattern({tuple, Anno, Ps0}, Cc0) ->
+    {Ps1, Cc1} = pattern_list(Ps0, Cc0),
+    {{tuple, Anno, Ps1}, Cc1};
+pattern({map, Anno, Ps0}, Cc0) ->
+    {Ps1, Cc1} = pattern_list(Ps0, Cc0),
+    {{map, Anno, Ps1}, Cc1};
+pattern({map_field_exact, Anno, K, V}, Cc0) ->
+    {Ke, Cc1} = expr(K, Cc0),
+    {Ve, Cc2} = pattern(V, Cc1),
+    {{map_field_exact, Anno, Ke, Ve}, Cc2};
+pattern({record, Anno, Name, Pfs0}, Cc0) ->
+    {Pfs1, Cc1} = pattern_fields(Pfs0, Cc0),
+    {{record, Anno, Name, Pfs1}, Cc1};
+pattern({record_index, Anno, Name, Field0}, Cc0) ->
+    {Field1, Cc1} = pattern(Field0, Cc0),
+    {{record_index, Anno, Name, Field1}, Cc1};
+pattern({record_field, Anno, Rec0, Name, Field0}, Cc0) ->
+    {Rec1, Cc1} = expr(Rec0, Cc0),
+    {Field1, Cc2} = expr(Field0, Cc1),
+    {{record_field, Anno, Rec1, Name, Field1}, Cc2};
+pattern({record_field, Anno, Rec0, Field0}, Cc0) ->
+    {Rec1, Cc1} = expr(Rec0, Cc0),
+    {Field1, Cc2} = expr(Field0, Cc1),
+    {{record_field, Anno, Rec1, Field1}, Cc2};
+pattern({bin, Anno, Fs}, Cc0) ->
+    {Fs2, Cc1} = pattern_grp(Fs, Cc0),
+    {{bin, Anno, Fs2}, Cc1};
+pattern({op, Anno, Op, A}, Cc0) ->
+    {{op, Anno, Op, A}, Cc0};
+pattern({op, Anno, Op, L, R}, Cc0) ->
+    {{op, Anno, Op, L, R}, Cc0}.
+
+pattern_grp([{bin_element, Anno, E1, S1, T1} | Fs], Cc0) ->
+    {S2, Cc1} =
+        case S1 of
+            default ->
+                {default, Cc0};
+            _ ->
+                expr(S1, Cc0)
+        end,
+    {T2, Cc2} =
+        case T1 of
+            default ->
+                {default, Cc1};
+            _ ->
+                bit_types(T1, Cc1)
+        end,
+    {E2, Cc3} = expr(E1, Cc2),
+    {Fs1, Cc4} = pattern_grp(Fs, Cc3),
+    {[{bin_element, Anno, E2, S2, T2} | Fs1], Cc4};
+pattern_grp([], Cc0) ->
+    {[], Cc0}.
+
+bit_types([], Cc0) ->
+    {[], Cc0};
+bit_types([Atom | Rest], Cc0) when is_atom(Atom) ->
+    {Rest1, Cc1} = bit_types(Rest, Cc0),
+    {[Atom | Rest1], Cc1};
+bit_types([{Atom, Integer} | Rest], Cc0) when is_atom(Atom), is_integer(Integer) ->
+    {Rest1, Cc1} = bit_types(Rest, Cc0),
+    {[{Atom, Integer} | Rest1], Cc1}.
+
+%% -type pattern_list([Pattern]) -> [Pattern].
+%%  These patterns are processed "in parallel" for purposes of variable
+%%  definition etc.
+
+pattern_list([P0 | Ps], Cc0) ->
+    {P1, Cc1} = pattern(P0, Cc0),
+    {Ps1, Cc2} = pattern_list(Ps, Cc1),
+    {[P1 | Ps1], Cc2};
+pattern_list([], Cc0) ->
+    {[], Cc0}.
+
+%% -type pattern_fields([Field]) -> [Field].
+%%  N.B. Field names are full expressions here but only atoms are allowed
+%%  by the *linter*!.
+
+pattern_fields([{record_field, Af, {atom, Aa, F}, P0} | Pfs], Cc0) ->
+    {P1, Cc1} = pattern(P0, Cc0),
+    {Pfs1, Cc2} = pattern_fields(Pfs, Cc1),
+    {[{record_field, Af, {atom, Aa, F}, P1} | Pfs1], Cc2};
+pattern_fields([{record_field, Af, {var, Aa, '_'}, P0} | Pfs], Cc0) ->
+    {P1, Cc1} = pattern(P0, Cc0),
+    {Pfs1, Cc2} = pattern_fields(Pfs, Cc1),
+    {[{record_field, Af, {var, Aa, '_'}, P1} | Pfs1], Cc2};
+pattern_fields([], Cc0) ->
+    {[], Cc0}.
+
+%% -type guard([GuardTest]) -> [GuardTest].
+
+guard([G0 | Gs], Cc0) when is_list(G0) ->
+    {G1, Cc1} = guard0(G0, Cc0),
+    {Gs1, Cc2} = guard(Gs, Cc1),
+    {[G1 | Gs1], Cc2};
+guard(L, Cc0) ->
+    guard0(L, Cc0).
+
+guard0([G0 | Gs], Cc0) ->
+    {G1, Cc1} = guard_test(G0, Cc0),
+    {Gs1, Cc2} = guard0(Gs, Cc1),
+    {[G1 | Gs1], Cc2};
+guard0([], Cc0) ->
+    {[], Cc0}.
+
+guard_test(Expr = {call, Anno, {atom, Aa, F}, As0}, Cc0) ->
+    case erl_internal:type_test(F, length(As0)) of
+        true ->
+            {As1, Cc1} = gexpr_list(As0, Cc0),
+            {{call, Anno, {atom, Aa, F}, As1}, Cc1};
+        _ ->
+            gexpr(Expr, Cc0)
+    end;
+guard_test(Any, Cc0) ->
+    gexpr(Any, Cc0).
+
+%% Before R9, there were special rules regarding the expressions on
+%% top level in guards. Those limitations are now lifted - therefore
+%% there is no need for a special clause for the toplevel expressions.
+%% -type gexpr(GuardExpr) -> GuardExpr.
+
+gexpr({var, Anno, V}, Cc0) ->
+    {{var, Anno, V}, Cc0};
+gexpr({integer, Anno, I}, Cc0) ->
+    {{integer, Anno, I}, Cc0};
+gexpr({char, Anno, C}, Cc0) ->
+    {{char, Anno, C}, Cc0};
+gexpr({float, Anno, F}, Cc0) ->
+    {{float, Anno, F}, Cc0};
+gexpr({atom, Anno, A}, Cc0) ->
+    {{atom, Anno, A}, Cc0};
+gexpr({string, Anno, S}, Cc0) ->
+    {{string, Anno, S}, Cc0};
+gexpr({nil, Anno}, Cc0) ->
+    {{nil, Anno}, Cc0};
+gexpr({map, Anno, Map0, Es0}, Cc0) ->
+    {[Map1 | Es1], Cc1} = gexpr_list([Map0 | Es0], Cc0),
+    {{map, Anno, Map1, Es1}, Cc1};
+gexpr({map, Anno, Es0}, Cc0) ->
+    {Es1, Cc1} = gexpr_list(Es0, Cc0),
+    {{map, Anno, Es1}, Cc1};
+gexpr({map_field_assoc, Anno, K, V}, Cc0) ->
+    {Ke, Cc1} = gexpr(K, Cc0),
+    {Ve, Cc2} = gexpr(V, Cc1),
+    {{map_field_assoc, Anno, Ke, Ve}, Cc2};
+gexpr({map_field_exact, Anno, K, V}, Cc0) ->
+    {Ke, Cc1} = gexpr(K, Cc0),
+    {Ve, Cc2} = gexpr(V, Cc1),
+    {{map_field_exact, Anno, Ke, Ve}, Cc2};
+gexpr({cons, Anno, H0, T0}, Cc0) ->
+    {H1, Cc1} = gexpr(H0, Cc0),
+    %They see the same variables
+    {T1, Cc2} = gexpr(T0, Cc1),
+    {{cons, Anno, H1, T1}, Cc2};
+gexpr({tuple, Anno, Es0}, Cc0) ->
+    {Es1, Cc1} = gexpr_list(Es0, Cc0),
+    {{tuple, Anno, Es1}, Cc1};
+gexpr({record_index, Anno, Name, Field0}, Cc0) ->
+    {Field1, Cc1} = gexpr(Field0, Cc0),
+    {{record_index, Anno, Name, Field1}, Cc1};
+gexpr({record_field, Anno, Rec0, Name, Field0}, Cc0) ->
+    {Rec1, Cc1} = gexpr(Rec0, Cc0),
+    {Field1, Cc2} = gexpr(Field0, Cc1),
+    {{record_field, Anno, Rec1, Name, Field1}, Cc2};
+gexpr({record, Anno, Name, Inits0}, Cc0) ->
+    {Inits1, Cc1} = grecord_inits(Inits0, Cc0),
+    {{record, Anno, Name, Inits1}, Cc1};
+gexpr({call, Anno, {atom, Aa, F}, As0}, Cc0) ->
+    case erl_internal:guard_bif(F, length(As0)) of
+        true ->
+            {As1, Cc1} = gexpr_list(As0, Cc0),
+            {{call, Anno, {atom, Aa, F}, As1}, Cc1}
+    end;
+% Guard bif's can be remote, but only in the module erlang...
+gexpr({call, Anno, {remote, Aa, {atom, Ab, erlang}, {atom, Ac, F}}, As0}, Cc0) ->
+    case
+        erl_internal:guard_bif(F, length(As0)) or
+            erl_internal:arith_op(F, length(As0)) or
+            erl_internal:comp_op(F, length(As0)) or
+            erl_internal:bool_op(F, length(As0))
+    of
+        true ->
+            {As1, Cc1} = gexpr_list(As0, Cc0),
+            {{call, Anno, {remote, Aa, {atom, Ab, erlang}, {atom, Ac, F}}, As1}, Cc1}
+    end;
+gexpr({bin, Anno, Fs}, Cc0) ->
+    {Fs2, Cc1} = pattern_grp(Fs, Cc0),
+    {{bin, Anno, Fs2}, Cc1};
+gexpr({op, Anno, Op, A0}, Cc0) ->
+    case
+        erl_internal:arith_op(Op, 1) or
+            erl_internal:bool_op(Op, 1)
+    of
+        true ->
+            {A1, Cc1} = gexpr(A0, Cc0),
+            {{op, Anno, Op, A1}, Cc1}
+    end;
+gexpr({op, Anno, Op, L0, R0}, Cc0) when Op =:= 'andalso'; Op =:= 'orelse' ->
+    %% R11B: andalso/orelse are now allowed in guards.
+    {L1, Cc1} = gexpr(L0, Cc0),
+    %They see the same variables
+    {R1, Cc2} = gexpr(R0, Cc1),
+    {{op, Anno, Op, L1, R1}, Cc2};
+gexpr({op, Anno, Op, L0, R0}, Cc0) ->
+    case
+        erl_internal:arith_op(Op, 2) or
+            erl_internal:bool_op(Op, 2) or
+            erl_internal:comp_op(Op, 2)
+    of
+        true ->
+            {L1, Cc1} = gexpr(L0, Cc0),
+            %They see the same variables
+            {R1, Cc2} = gexpr(R0, Cc1),
+            {{op, Anno, Op, L1, R1}, Cc2}
+    end.
+
+%% -type gexpr_list([GuardExpr]) -> [GuardExpr].
+%%  These expressions are processed "in parallel" for purposes of variable
+%%  definition etc.
+
+gexpr_list([E0 | Es], Cc0) ->
+    {E1, Cc1} = gexpr(E0, Cc0),
+    {Es1, Cc2} = gexpr_list(Es, Cc1),
+    {[E1 | Es1], Cc2};
+gexpr_list([], Cc0) ->
+    {[], Cc0}.
+
+grecord_inits([{record_field, Af, {atom, Aa, F}, Val0} | Is], Cc0) ->
+    {Val1, Cc1} = gexpr(Val0, Cc0),
+    {Is1, Cc2} = grecord_inits(Is, Cc1),
+    {[{record_field, Af, {atom, Aa, F}, Val1} | Is1], Cc2};
+grecord_inits([{record_field, Af, {var, Aa, '_'}, Val0} | Is], Cc0) ->
+    {Val1, Cc1} = gexpr(Val0, Cc0),
+    {Is1, Cc2} = grecord_inits(Is, Cc1),
+    {[{record_field, Af, {var, Aa, '_'}, Val1} | Is1], Cc2};
+grecord_inits([], Cc0) ->
+    {[], Cc0}.
+
+%% -type exprs([Expression]) -> [Expression].
+%%  These expressions are processed "sequentially" for purposes of variable
+%%  definition etc.
+
+exprs([E0 | Es], Cc0) ->
+    {E1, Cc1} = expr(E0, Cc0),
+    {Es1, Cc2} = exprs(Es, Cc1),
+    {[E1 | Es1], Cc2};
+exprs([], Cc0) ->
+    {[], Cc0}.
+
+%% -type expr(Expression) -> Expression.
+
+expr({var, Anno, V}, Cc0) ->
+    {{var, Anno, V}, Cc0};
+expr({integer, Anno, I}, Cc0) ->
+    {{integer, Anno, I}, Cc0};
+expr({float, Anno, F}, Cc0) ->
+    {{float, Anno, F}, Cc0};
+expr({atom, Anno, A}, Cc0) ->
+    {{atom, Anno, A}, Cc0};
+expr({string, Anno, S}, Cc0) ->
+    {{string, Anno, S}, Cc0};
+expr({char, Anno, C}, Cc0) ->
+    {{char, Anno, C}, Cc0};
+expr({nil, Anno}, Cc0) ->
+    {{nil, Anno}, Cc0};
+expr({cons, Anno, H0, T0}, Cc0) ->
+    {H1, Cc1} = expr(H0, Cc0),
+    %They see the same variables
+    {T1, Cc2} = expr(T0, Cc1),
+    {{cons, Anno, H1, T1}, Cc2};
+expr({lc, Anno, E0, Qs0}, Cc0) ->
+    {Qs1, Cc1} = lc_bc_quals(Qs0, Cc0),
+    {E1, Cc2} = expr(E0, Cc1),
+    {{lc, Anno, E1, Qs1}, Cc2};
+expr({bc, Anno, E0, Qs0}, Cc0) ->
+    {Qs1, Cc1} = lc_bc_quals(Qs0, Cc0),
+    {E1, Cc2} = expr(E0, Cc1),
+    {{bc, Anno, E1, Qs1}, Cc2};
+expr({tuple, Anno, Es0}, Cc0) ->
+    {Es1, Cc1} = expr_list(Es0, Cc0),
+    {{tuple, Anno, Es1}, Cc1};
+expr({map, Anno, Map0, Es0}, Cc0) ->
+    {[Map1 | Es1], Cc1} = exprs([Map0 | Es0], Cc0),
+    {{map, Anno, Map1, Es1}, Cc1};
+expr({map, Anno, Es0}, Cc0) ->
+    {Es1, Cc1} = exprs(Es0, Cc0),
+    {{map, Anno, Es1}, Cc1};
+expr({map_field_assoc, Anno, K, V}, Cc0) ->
+    {Ke, Cc1} = expr(K, Cc0),
+    {Ve, Cc2} = expr(V, Cc1),
+    {{map_field_assoc, Anno, Ke, Ve}, Cc2};
+expr({map_field_exact, Anno, K, V}, Cc0) ->
+    {Ke, Cc1} = expr(K, Cc0),
+    {Ve, Cc2} = expr(V, Cc1),
+    {{map_field_exact, Anno, Ke, Ve}, Cc2};
+expr({record_index, Anno, Name, Field0}, Cc0) ->
+    {Field1, Cc1} = expr(Field0, Cc0),
+    {{record_index, Anno, Name, Field1}, Cc1};
+expr({record, Anno, Name, Inits0}, Cc0) ->
+    {Inits1, Cc1} = record_inits(Inits0, Cc0),
+    {{record, Anno, Name, Inits1}, Cc1};
+expr({record_field, Anno, Rec0, Name, Field0}, Cc0) ->
+    {Rec1, Cc1} = expr(Rec0, Cc0),
+    {Field1, Cc2} = expr(Field0, Cc1),
+    {{record_field, Anno, Rec1, Name, Field1}, Cc2};
+expr({record, Anno, Rec0, Name, Upds0}, Cc0) ->
+    {Rec1, Cc1} = expr(Rec0, Cc0),
+    {Upds1, Cc2} = record_updates(Upds0, Cc1),
+    {{record, Anno, Rec1, Name, Upds1}, Cc2};
+expr({record_field, Anno, Rec0, Field0}, Cc0) ->
+    {Rec1, Cc1} = expr(Rec0, Cc0),
+    {Field1, Cc2} = expr(Field0, Cc1),
+    {{record_field, Anno, Rec1, Field1}, Cc2};
+expr({block, Anno, Es0}, Cc0) ->
+    %% Unfold block into a sequence.
+    {Es1, Cc1} = exprs(Es0, Cc0),
+    {{block, Anno, Es1}, Cc1};
+expr({'if', Anno, Cs0}, Cc0) ->
+    {Cs1, Cc1} = icr_clauses(Cs0, Cc0),
+    {{'if', Anno, Cs1}, Cc1};
+expr({'case', Anno, E0, Cs0}, Cc0) ->
+    {E1, Cc1} = expr(E0, Cc0),
+    {Cs1, Cc2} = icr_clauses(Cs0, Cc1),
+    {{'case', Anno, E1, Cs1}, Cc2};
+expr({'receive', Anno, Cs0}, Cc0) ->
+    {Cs1, Cc1} = icr_clauses(Cs0, Cc0),
+    {{'receive', Anno, Cs1}, Cc1};
+expr({'receive', Anno, Cs0, To0, ToEs0}, Cc0) ->
+    {To1, Cc1} = expr(To0, Cc0),
+    {ToEs1, Cc2} = exprs(ToEs0, Cc1),
+    {Cs1, Cc3} = icr_clauses(Cs0, Cc2),
+    {{'receive', Anno, Cs1, To1, ToEs1}, Cc3};
+expr({'try', Anno, Es0, Scs0, Ccs0, As0}, Cc0) ->
+    {Es1, Cc1} = exprs(Es0, Cc0),
+    {Scs1, Cc2} = icr_clauses(Scs0, Cc1),
+    {Ccs1, Cc3} = icr_clauses(Ccs0, Cc2),
+    {As1, Cc4} = exprs(As0, Cc3),
+    {{'try', Anno, Es1, Scs1, Ccs1, As1}, Cc4};
+expr({'fun', Anno, Body}, Cc0) ->
+    case Body of
+        {clauses, Cs0} ->
+            {Cs1, Cc1} = fun_clauses(Cs0, Cc0),
+            {{'fun', Anno, {clauses, Cs1}}, Cc1};
+        {function, F, A} ->
+            {{'fun', Anno, {function, F, A}}, Cc0};
+        {function, M0, F0, A0} ->
+            {M, Cc1} = expr(M0, Cc0),
+            {F, Cc2} = expr(F0, Cc1),
+            {A, Cc3} = expr(A0, Cc2),
+            {{'fun', Anno, {function, M, F, A}}, Cc3}
+    end;
+expr({named_fun, Anno, Name, Cs}, Cc0) ->
+    {Cs1, Cc1} = fun_clauses(Cs, Cc0),
+    {{named_fun, Anno, Name, Cs1}, Cc1};
+expr({call, Anno, {remote, _Anno2, {atom, _Anno3, ebpf_kern}, {atom, _Anno4, fun2bpf}}, As0}, Cc0) ->
+    transform_call(Anno, As0, Cc0);
+expr({call, Anno, F0, As0}, Cc0) ->
+    %% N.B. If F an atom then call to local function or BIF, if F a
+    %% remote structure (see below) then call to other module,
+    %% otherwise apply to "function".
+    {F1, Cc1} = expr(F0, Cc0),
+    {As1, Cc2} = expr_list(As0, Cc1),
+    {{call, Anno, F1, As1}, Cc2};
+expr({'catch', Anno, E0}, Cc0) ->
+    %% No new variables added.
+    {E1, Cc1} = expr(E0, Cc0),
+    {{'catch', Anno, E1}, Cc1};
+expr({match, Anno, P0, E0}, Cc0) ->
+    {E1, Cc1} = expr(E0, Cc0),
+    {P1, Cc2} = pattern(P0, Cc1),
+    {{match, Anno, P1, E1}, Cc2};
+expr({bin, Anno, Fs}, Cc0) ->
+    {Fs2, Cc1} = pattern_grp(Fs, Cc0),
+    {{bin, Anno, Fs2}, Cc1};
+expr({op, Anno, Op, A0}, Cc0) ->
+    {A1, Cc1} = expr(A0, Cc0),
+    {{op, Anno, Op, A1}, Cc1};
+expr({op, Anno, Op, L0, R0}, Cc0) ->
+    {L1, Cc1} = expr(L0, Cc0),
+    %They see the same variables
+    {R1, Cc2} = expr(R0, Cc1),
+    {{op, Anno, Op, L1, R1}, Cc2};
+%% The following are not allowed to occur anywhere!
+expr({remote, Anno, M0, F0}, Cc0) ->
+    {M1, Cc1} = expr(M0, Cc0),
+    {F1, Cc2} = expr(F0, Cc1),
+    {{remote, Anno, M1, F1}, Cc2}.
+
+%% -type expr_list([Expression]) -> [Expression].
+%%  These expressions are processed "in parallel" for purposes of variable
+%%  definition etc.
+
+expr_list([E0 | Es], Cc0) ->
+    {E1, Cc1} = expr(E0, Cc0),
+    {Es1, Cc2} = expr_list(Es, Cc1),
+    {[E1 | Es1], Cc2};
+expr_list([], Cc0) ->
+    {[], Cc0}.
+
+%% -type record_inits([RecordInit]) -> [RecordInit].
+%%  N.B. Field names are full expressions here but only atoms are allowed
+%%  by the *linter*!.
+
+record_inits([{record_field, Af, {atom, Aa, F}, Val0} | Is], Cc0) ->
+    {Val1, Cc1} = expr(Val0, Cc0),
+    {Is1, Cc2} = record_inits(Is, Cc1),
+    {[{record_field, Af, {atom, Aa, F}, Val1} | Is1], Cc2};
+record_inits([{record_field, Af, {var, Aa, '_'}, Val0} | Is], Cc0) ->
+    {Val1, Cc1} = expr(Val0, Cc0),
+    {Is1, Cc2} = record_inits(Is, Cc1),
+    {[{record_field, Af, {var, Aa, '_'}, Val1} | Is1], Cc2};
+record_inits([], Cc0) ->
+    {[], Cc0}.
+
+%% -type record_updates([RecordUpd]) -> [RecordUpd].
+%%  N.B. Field names are full expressions here but only atoms are allowed
+%%  by the *linter*!.
+
+record_updates([{record_field, Af, {atom, Aa, F}, Val0} | Us], Cc0) ->
+    {Val1, Cc1} = expr(Val0, Cc0),
+    {Us1, Cc2} = record_updates(Us, Cc1),
+    {[{record_field, Af, {atom, Aa, F}, Val1} | Us1], Cc2};
+record_updates([], Cc0) ->
+    {[], Cc0}.
+
+%% -type icr_clauses([Clause]) -> [Clause].
+
+icr_clauses([C0 | Cs], Cc0) ->
+    {C1, Cc1} = clause(C0, Cc0),
+    {Cs1, Cc2} = icr_clauses(Cs, Cc1),
+    {[C1 | Cs1], Cc2};
+icr_clauses([], Cc0) ->
+    {[], Cc0}.
+
+%% -type lc_bc_quals([Qualifier]) -> [Qualifier].
+%%  Allow filters to be both guard tests and general expressions.
+
+lc_bc_quals([{generate, Anno, P0, E0} | Qs], Cc0) ->
+    {E1, Cc1} = expr(E0, Cc0),
+    {P1, Cc2} = pattern(P0, Cc1),
+    {Qs1, Cc3} = lc_bc_quals(Qs, Cc2),
+    {[{generate, Anno, P1, E1} | Qs1], Cc3};
+lc_bc_quals([{b_generate, Anno, P0, E0} | Qs], Cc0) ->
+    {E1, Cc1} = expr(E0, Cc0),
+    {P1, Cc2} = pattern(P0, Cc1),
+    {Qs1, Cc3} = lc_bc_quals(Qs, Cc2),
+    {[{b_generate, Anno, P1, E1} | Qs1], Cc3};
+lc_bc_quals([E0 | Qs], Cc0) ->
+    {E1, Cc1} = expr(E0, Cc0),
+    {Qs1, Cc2} = lc_bc_quals(Qs, Cc1),
+    {[E1 | Qs1], Cc2};
+lc_bc_quals([], Cc0) ->
+    {[], Cc0}.
+
+%% -type fun_clauses([Clause]) -> [Clause].
+
+fun_clauses([C0 | Cs], Cc0) ->
+    {C1, Cc1} = clause(C0, Cc0),
+    {Cs1, Cc2} = fun_clauses(Cs, Cc1),
+    {[C1 | Cs1], Cc2};
+fun_clauses([], Cc0) ->
+    {[], Cc0}.
+
+function_type_list([{type, Anno, bounded_fun, [Ft, Fc]} | Fts], Cc0) ->
+    {Ft1, Cc1} = function_type(Ft, Cc0),
+    {Fc1, Cc2} = function_constraint(Fc, Cc1),
+    {Fts1, Cc3} = function_type_list(Fts, Cc2),
+    {[{type, Anno, bounded_fun, [Ft1, Fc1]} | Fts1], Cc3};
+function_type_list([Ft | Fts], Cc0) ->
+    {Ft1, Cc1} = function_type(Ft, Cc0),
+    {Fts1, Cc2} = function_type_list(Fts, Cc1),
+    {[Ft1 | Fts1], Cc2};
+function_type_list([], Cc0) ->
+    {[], Cc0}.
+
+function_type({type, Anno, 'fun', [{type, At, product, As}, B]}, Cc0) ->
+    {As1, Cc1} = type_list(As, Cc0),
+    {B1, Cc2} = type(B, Cc1),
+    {{type, Anno, 'fun', [{type, At, product, As1}, B1]}, Cc2}.
+
+function_constraint([C | Cs], Cc0) ->
+    {C1, Cc1} = constraint(C, Cc0),
+    {Cs1, Cc2} = function_constraint(Cs, Cc1),
+    {[C1 | Cs1], Cc2};
+function_constraint([], Cc0) ->
+    {[], Cc0}.
+
+constraint({type, Anno, constraint, [{atom, Annoa, A}, [V, T]]}, Cc0) ->
+    {V1, Cc1} = type(V, Cc0),
+    {T1, Cc2} = type(T, Cc1),
+    {{type, Anno, constraint, [{atom, Annoa, A}, [V1, T1]]}, Cc2}.
+
+type({ann_type, Anno, [{var, Av, V}, T]}, Cc0) ->
+    {T1, Cc1} = type(T, Cc0),
+    {{ann_type, Anno, [{var, Av, V}, T1]}, Cc1};
+type({atom, Anno, A}, Cc0) ->
+    {{atom, Anno, A}, Cc0};
+type({integer, Anno, I}, Cc0) ->
+    {{integer, Anno, I}, Cc0};
+type({op, Anno, Op, T}, Cc0) ->
+    {T1, Cc1} = type(T, Cc0),
+    {{op, Anno, Op, T1}, Cc1};
+type({op, Anno, Op, L, R}, Cc0) ->
+    {L1, Cc1} = type(L, Cc0),
+    {R1, Cc2} = type(R, Cc1),
+    {{op, Anno, Op, L1, R1}, Cc2};
+type({type, Anno, binary, [M, N]}, Cc0) ->
+    {M1, Cc1} = type(M, Cc0),
+    {N1, Cc2} = type(N, Cc1),
+    {{type, Anno, binary, [M1, N1]}, Cc2};
+type({type, Anno, 'fun', []}, Cc0) ->
+    {{type, Anno, 'fun', []}, Cc0};
+type({type, Anno, 'fun', [{type, At, any}, B]}, Cc0) ->
+    {B1, Cc1} = type(B, Cc0),
+    {{type, Anno, 'fun', [{type, At, any}, B1]}, Cc1};
+type({type, Anno, range, [L, H]}, Cc0) ->
+    {L1, Cc1} = type(L, Cc0),
+    {H1, Cc2} = type(H, Cc1),
+    {{type, Anno, range, [L1, H1]}, Cc2};
+type({type, Anno, map, any}, Cc0) ->
+    {{type, Anno, map, any}, Cc0};
+type({type, Anno, map, Ps}, Cc0) ->
+    {Ps1, Cc1} = map_pair_types(Ps, Cc0),
+    {{type, Anno, map, Ps1}, Cc1};
+type({type, Anno, record, [{atom, Aa, N} | Fs]}, Cc0) ->
+    {Fs1, Cc1} = field_types(Fs, Cc0),
+    {{type, Anno, record, [{atom, Aa, N} | Fs1]}, Cc1};
+type({remote_type, Anno, [{atom, Am, M}, {atom, An, N}, As]}, Cc0) ->
+    {As1, Cc1} = type_list(As, Cc0),
+    {{remote_type, Anno, [{atom, Am, M}, {atom, An, N}, As1]}, Cc1};
+type({type, Anno, tuple, any}, Cc0) ->
+    {{type, Anno, tuple, any}, Cc0};
+type({type, Anno, tuple, Ts}, Cc0) ->
+    {Ts1, Cc1} = type_list(Ts, Cc0),
+    {{type, Anno, tuple, Ts1}, Cc1};
+type({type, Anno, union, Ts}, Cc0) ->
+    {Ts1, Cc1} = type_list(Ts, Cc0),
+    {{type, Anno, union, Ts1}, Cc1};
+type({var, Anno, V}, Cc0) ->
+    {{var, Anno, V}, Cc0};
+type({user_type, Anno, N, As}, Cc0) ->
+    {As1, Cc1} = type_list(As, Cc0),
+    {{user_type, Anno, N, As1}, Cc1};
+type({type, Anno, N, As}, Cc0) ->
+    {As1, Cc1} = type_list(As, Cc0),
+    {{type, Anno, N, As1}, Cc1}.
+
+map_pair_types([{type, Anno, map_field_assoc, [K, V]} | Ps], Cc0) ->
+    {K1, Cc1} = type(K, Cc0),
+    {V1, Cc2} = type(V, Cc1),
+    {Ps1, Cc3} = map_pair_types(Ps, Cc2),
+    {[{type, Anno, map_field_assoc, [K1, V1]} | Ps1], Cc3};
+map_pair_types([{type, Anno, map_field_exact, [K, V]} | Ps], Cc0) ->
+    {K1, Cc1} = type(K, Cc0),
+    {V1, Cc2} = type(V, Cc1),
+    {Ps1, Cc3} = map_pair_types(Ps, Cc2),
+    {[{type, Anno, map_field_exact, [K1, V1]} | Ps1], Cc3};
+map_pair_types([], Cc0) ->
+    {[], Cc0}.
+
+field_types([{type, Anno, field_type, [{atom, Aa, A}, T]} | Fs], Cc0) ->
+    {T1, Cc1} = type(T, Cc0),
+    {Fs1, Cc2} = field_types(Fs, Cc1),
+    {[{type, Anno, field_type, [{atom, Aa, A}, T1]} | Fs1], Cc2};
+field_types([], Cc0) ->
+    {[], Cc0}.
+
+type_list([T | Ts], Cc0) ->
+    {T1, Cc1} = type(T, Cc0),
+    {Ts1, Cc2} = type_list(Ts, Cc1),
+    {[T1 | Ts1], Cc2};
+type_list([], Cc0) ->
+    {[], Cc0}.
+
+transform_call(Anno, [{atom, _Anno2, Type}, {'fun', _Anno3, {clauses, [Clause]}}], Cc0) ->
+    {bpf_clause(Type, Anno, Clause), Cc0};
+transform_call(Anno, _AnythingElse, Cc0) ->
+    throw({error, Anno, 1, Cc0}).
+
+bpf_clause(Type, Anno, {clause, _Anno2, [{var, _Anno3, Var}] = _Parameters, [] = _Guards, Body}) ->
+    transform_body(Type, Anno, Body, Var).
+
+transform_body(xdp, Anno, [{integer, _Anno2, Value}], _Var) ->
+    {cons, Anno,
+        {tuple, Anno, [
+            {atom, Anno, bpf_instruction},
+            {tuple, Anno, [{atom, Anno, alu64}, {atom, Anno, k}, {atom, Anno, mov}]},
+            {atom, Anno, r0},
+            {atom, Anno, r0},
+            {integer, Anno, 0},
+            {integer, Anno, Value}
+        ]},
+        {cons, Anno,
+            {tuple, Anno, [
+                {atom, Anno, bpf_instruction},
+                {tuple, Anno, [{atom, Anno, jmp64}, {atom, Anno, k}, {atom, Anno, exit}]},
+                {atom, Anno, r0},
+                {atom, Anno, r0},
+                {integer, Anno, 0},
+                {integer, Anno, 0}
+            ]},
+            {nil, Anno}}}.
