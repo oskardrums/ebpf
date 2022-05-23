@@ -888,6 +888,35 @@ ebpf_create_map5(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ERL_NIF_TERM
+ebpf_obj_get(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  int fd;
+  ErlNifBinary filename = {0,};
+
+  if (argc != 1)
+    {
+      return enif_make_badarg(env);
+    }
+
+  if (!enif_inspect_binary(env, argv[0], &filename))
+    {
+      return enif_make_badarg(env);
+    }
+
+  // filename.data should be a null terminated string
+  char* fpath = strndup((const char *) filename.data, filename.size);
+  fd = bpf_obj_get((const char *) fpath);
+  if (fd < 0)
+    {
+      free(fpath);
+      return mk_error(env, erl_errno_id(errno));
+    }
+
+  free(fpath);
+  return enif_make_tuple(env, 2, mk_atom(env, "ok"), enif_make_int(env, fd));
+}
+
+static ERL_NIF_TERM
 ebpf_close1(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
   int fd = -1;
@@ -1192,6 +1221,7 @@ static ErlNifFunc nif_funcs[] = {
 				 {"bpf_detach_socket_filter", 1, ebpf_detach_socket_filter1, 0},
 				 {"bpf_attach_xdp", 2, ebpf_attach_xdp, 0},
 				 {"bpf_create_map", 5, ebpf_create_map5, 0},
+				 {"bpf_obj_get", 1, ebpf_obj_get, 0},
 				 {"bpf_close", 1, ebpf_close1, 0},
 				 {"bpf_update_map_element", 4, ebpf_update_map_element4, 0},
 				 {"bpf_lookup_map_element", 4, ebpf_lookup_map_element4, 0},

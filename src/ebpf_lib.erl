@@ -17,6 +17,7 @@
     bpf_detach_socket_filter/1,
     bpf_attach_xdp/2,
     bpf_create_map/5,
+    bpf_obj_get/1,
     bpf_update_map_element/4,
     bpf_lookup_map_element/4,
     bpf_lookup_and_delete_map_element/3,
@@ -65,6 +66,10 @@ bpf_attach_xdp(_IfIndex, _ProgFd) ->
 -spec bpf_create_map(non_neg_integer(), integer(), integer(), integer(), non_neg_integer()) ->
     {'ok', non_neg_integer()} | {'error', atom()}.
 bpf_create_map(_Type, _KeySize, _ValueSize, _MaxEntries, _Flags) ->
+    not_loaded(?LINE).
+
+-spec bpf_obj_get(binary()) -> {'ok', non_neg_integer()} | {'error', atom()}.
+bpf_obj_get(_Path) ->
     not_loaded(?LINE).
 
 -spec bpf_update_map_element(integer(), binary(), binary(), non_neg_integer()) ->
