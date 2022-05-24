@@ -6,9 +6,13 @@
 
 #define _GNU_SOURCE
 #include <unistd.h>
+#include <stdio.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <asm/unistd.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <linux/bpf.h>
 #include "bpf.h"
 
@@ -969,4 +973,104 @@ int ebpf__prog_load(enum bpf_prog_type type, const struct bpf_insn *insns,
   load_attr.prog_flags = prog_flags;
 
   return sys_bpf_prog_load(&load_attr, sizeof(load_attr));
+}
+
+int parse_cpu_mask_str(const char *s, bool **mask, int *mask_sz)
+{
+  int err = 0, n, len, start, end = -1;
+  bool *tmp;
+
+  *mask = NULL;
+  *mask_sz = 0;
+
+  /* Each sub string separated by ',' has format \d+-\d+ or \d+ */
+  while (*s) {
+    if (*s == ',' || *s == '\n') {
+      s++;
+      continue;
+    }
+    n = sscanf(s, "%d%n-%d%n", &start, &len, &end, &len);
+    if (n <= 0 || n > 2) {
+      err = -EINVAL;
+      goto cleanup;
+    } else if (n == 1) {
+      end = start;
+    }
+    if (start < 0 || start > end) {
+      err = -EINVAL;
+      goto cleanup;
+    }
+    tmp = realloc(*mask, end + 1);
+    if (!tmp) {
+      err = -ENOMEM;
+      goto cleanup;
+    }
+    *mask = tmp;
+    memset(tmp + *mask_sz, 0, start - *mask_sz);
+    memset(tmp + start, 1, end - start + 1);
+    *mask_sz = end + 1;
+    s += len;
+  }
+
+  if (!*mask_sz) {
+    return -EINVAL;
+  }
+  return 0;
+
+cleanup:
+  free(*mask);
+  *mask = NULL;
+  return err;
+}
+
+int parse_cpu_mask_file(const char *fcpu, bool **mask, int *mask_sz)
+{
+  int fd, err = 0;
+  ssize_t len;
+  const ssize_t max_len = 128;
+  char buf[max_len];
+
+  fd = open(fcpu, O_RDONLY | O_CLOEXEC);
+  if (fd < 0) {
+    err = -errno;
+    return err;
+  }
+  len = read(fd, buf, sizeof(buf));
+  close(fd);
+  if (len <= 0) {
+    err = len ? -errno : -EINVAL;
+    return err;
+  }
+  if (len >= max_len) {
+    return -E2BIG;
+  }
+  buf[len] = '\0';
+
+  return parse_cpu_mask_str(buf, mask, mask_sz);
+}
+
+unsigned int get_possible_cpus(void)
+{
+  static const char *fcpu = "/sys/devices/system/cpu/possible";
+  static int cpus;
+  int err, n, tmp_cpus;
+  bool *mask;
+
+ 	tmp_cpus = READ_ONCE(cpus);
+  if (tmp_cpus > 0)
+    return tmp_cpus;
+
+  err = parse_cpu_mask_file(fcpu, &mask, &n);
+  if (err)
+    return 1;
+
+  tmp_cpus = 0;
+  for (int i = 0; i < n; i++) {
+    if (mask[i])
+      tmp_cpus++;
+  }
+  free(mask);
+
+  WRITE_ONCE(cpus, tmp_cpus);
+  return tmp_cpus;
 }

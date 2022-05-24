@@ -610,6 +610,9 @@ erl_errno_id(error)
   return "unknown";
 }
 
+#define __round_mask(x, y) ((__typeof__(x))((y) -1))
+#define round_up(x, y) ((((x) -1) | __round_mask(x, y)) + 1)
+
 ERL_NIF_TERM
 mk_atom(ErlNifEnv* env, const char* atom)
 {
@@ -627,6 +630,28 @@ ERL_NIF_TERM
 mk_error(ErlNifEnv* env, const char* mesg)
 {
   return enif_make_tuple2(env, mk_atom(env, "error"), mk_atom(env, mesg));
+}
+
+unsigned int get_possible_cpus(void);
+
+static bool
+map_is_per_cpu(__u32 type)
+{
+  return type == BPF_MAP_TYPE_PERCPU_HASH ||
+      type == BPF_MAP_TYPE_PERCPU_ARRAY ||
+      type == BPF_MAP_TYPE_LRU_PERCPU_HASH;
+}
+
+static size_t
+value_size_to_alloc(struct bpf_map_info *info)
+{
+  if (!info->value_size)
+    return 0;
+
+  if (map_is_per_cpu(info->type))
+    return (round_up(info->value_size, 8) * get_possible_cpus());
+  else
+    return info->value_size;
 }
 
 static ERL_NIF_TERM
@@ -981,6 +1006,60 @@ ebpf_lookup_map_element4(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ERL_NIF_TERM
+ebpf_lookup_map_element2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  int fd = -1;
+  ErlNifBinary key = {0,};
+  ERL_NIF_TERM value = {0,};
+  size_t value_size;
+  struct bpf_map_info info = {};
+  __u32 len = sizeof(info);
+  unsigned char *dptr;
+
+  int res = -1;
+
+  if(argc != 2)
+    {
+      return enif_make_badarg(env);
+    }
+
+  if(!enif_get_int(env, argv[0], &fd) || !enif_inspect_binary(env, argv[1], &key))
+    {
+      return enif_make_badarg(env);
+    }
+
+  if (bpf_obj_get_info_by_fd(fd, &info, &len))
+    {
+      return mk_error(env, erl_errno_id(errno));
+    }
+
+  if (key.size != info.key_size)
+    {
+      return mk_error(env, "key_size");
+    }
+
+  value_size = value_size_to_alloc(&info);
+  if (!value_size)
+    {
+      return mk_error(env, erl_errno_id(errno));
+    }
+
+  dptr = enif_make_new_binary(env, value_size, &value);
+  if (!dptr)
+    {
+      return mk_error(env, erl_errno_id(errno));
+    }
+
+  res = bpf_map_lookup_elem(fd, key.data, dptr);
+  if (res < 0)
+    {
+      return mk_error(env, erl_errno_id(errno));
+    }
+
+  return enif_make_tuple2(env, mk_atom(env, "ok"), value);
+}
+
+static ERL_NIF_TERM
 ebpf_delete_map_element2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
   int fd;
@@ -1194,6 +1273,7 @@ static ErlNifFunc nif_funcs[] = {
 				 {"bpf_create_map", 5, ebpf_create_map5, 0},
 				 {"bpf_close", 1, ebpf_close1, 0},
 				 {"bpf_update_map_element", 4, ebpf_update_map_element4, 0},
+				 {"bpf_lookup_map_element", 2, ebpf_lookup_map_element2, 0},
 				 {"bpf_lookup_map_element", 4, ebpf_lookup_map_element4, 0},
 				 {"bpf_lookup_and_delete_map_element", 3, ebpf_lookup_and_delete_map_element3, 0},
 				 {"bpf_delete_map_element", 2, ebpf_delete_map_element2, 0},

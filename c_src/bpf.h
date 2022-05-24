@@ -114,6 +114,13 @@ struct bpf_create_map_attr {
 	};
 };
 
+#define WRITE_ONCE(var, val) \
+	(*((volatile typeof(val) *)(&(var))) = (val))
+
+#define READ_ONCE(var) (*((volatile typeof(var) *)(&(var))))
+
+unsigned int get_possible_cpus(void);
+
 int
 bpf_create_map_xattr(const struct bpf_create_map_attr *create_attr);
 int bpf_create_map_node(enum bpf_map_type map_type, const char *name,
